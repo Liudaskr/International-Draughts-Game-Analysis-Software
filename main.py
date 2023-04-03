@@ -11,7 +11,7 @@ def main():
     pg.init()
     Window()
     menu = Menu(background)
-    menu.draw_menu()
+    menu.draw()
     running = True
     current_screen = menu
     while running:

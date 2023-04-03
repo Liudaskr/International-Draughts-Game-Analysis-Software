@@ -2,6 +2,8 @@ import sys
 
 import pygame as pg
 
+from gui_elements import Button, Container, RadioButton, RadioButtonGroup
+
 
 class Window():
     def __init__(self):
@@ -18,67 +20,135 @@ class Menu(Window):
         super().__init__()
         self.background = background
 
-        self.button_backdrop_color = (82, 85, 84)
-        self.button_backdrop_width = 300
-        self.button_backdrop_height = 450
-        self.button_backdrop_x = 250
-        self.button_backdrop_y = 75
-        self.button_font = pg.font.SysFont("constantia", 28)
+        self.container = Container(250, 75, 300, 450, (82, 85, 84))
 
-        self.button_color = (53, 57, 60)
-        self.button_width = 200
-        self.button_height = 50
-        self.button_x = 300
-        self.button_y = (125, 200, 275, 350, 425)
-        self.button_play = pg.Rect(self.button_x, self.button_y[0], self.button_width, self.button_height)
-        self.button_saved_games = pg.Rect(self.button_x, self.button_y[1], self.button_width, self.button_height)
-        self.button_create_analysis = pg.Rect(self.button_x, self.button_y[2], self.button_width, self.button_height)
-        self.button_view_analysis = pg.Rect(self.button_x, self.button_y[3], self.button_width, self.button_height)
-        self.button_quit = pg.Rect(self.button_x, self.button_y[4], self.button_width, self.button_height)
+        self.buttons = [
+            Button(300, 125, 200, 50, "Play", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(300, 200, 200, 50, "Saved Games", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(300, 275, 200, 50, "Create Analysis", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(300, 350, 200, 50, "View Analysis", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(300, 425, 200, 50, "Quit", "constantia", 28, (53, 57, 60), (255, 255, 255))
+        ]
 
     def draw_background(self):
         self.screen.blit(self.background, (0, 0))
 
-    def draw_button_backdrop(self):
-        button_backdrop = pg.Rect(
-            self.button_backdrop_x, self.button_backdrop_y, self.button_backdrop_width, self.button_backdrop_height)
-        pg.draw.rect(self.screen, self.button_backdrop_color, button_backdrop)
+    def draw_container(self):
+        self.container.draw(self.screen)
 
     def draw_buttons(self):
-        buttons = [
-            (self.button_play, "Play"),
-            (self.button_saved_games, "Saved Games"),
-            (self.button_create_analysis, "Create Analysis"),
-            (self.button_view_analysis, "View Analysis"),
-            (self.button_quit, "Quit")
-            ]
-        white = (255, 255, 255)
+        for button in self.buttons:
+            button.draw(self.screen)
 
-        for button, _ in buttons:
-            pg.draw.rect(self.screen, self.button_color, button)
-
-        for button, text in buttons:
-            pg.draw.rect(self.screen, self.button_color, button)
-            button_text = self.button_font.render(text, True, white)
-            button_text_rect = button_text.get_rect(center=button.center)
-            self.screen.blit(button_text, button_text_rect)
-
-    def draw_menu(self):
+    def draw(self):
         self.draw_background()
-        self.draw_button_backdrop()
+        self.draw_container()
         self.draw_buttons()
 
     def handle_event(self, event):
         if event.type == pg.MOUSEBUTTONUP:
             mouse_pos = pg.mouse.get_pos()
-            if self.button_play.collidepoint(mouse_pos):
-                print("You clicked Play")
-            elif self.button_saved_games.collidepoint(mouse_pos):
+            if self.buttons[0].rect.collidepoint(mouse_pos):
+                game_options = GameOptions(self.background)
+                game_options.draw()
+                return game_options
+            elif self.buttons[1].rect.collidepoint(mouse_pos):
                 print("You clicked Save Game")
-            elif self.button_create_analysis.collidepoint(mouse_pos):
+            elif self.buttons[2].rect.collidepoint(mouse_pos):
                 print("You clicked Create Analysis")
-            elif self.button_view_analysis.collidepoint(mouse_pos):
+            elif self.buttons[3].rect.collidepoint(mouse_pos):
                 print("You clicked View Analysis")
-            elif self.button_quit.collidepoint(mouse_pos):
+            elif self.buttons[4].rect.collidepoint(mouse_pos):
                 sys.exit()
+        return self
+
+
+class GameOptions(Window):
+    def __init__(self, background):
+        super().__init__()
+        self.background = background
+
+        self.container = Container(100, 50, 600, 500, (82, 85, 84))
+
+        self.radio_button_groups = [
+            RadioButtonGroup([
+                RadioButton(
+                    150, 100, 200, 30, "Play VS Myself", (255, 255, 255),
+                    "gadugi", 18, 15, (0, 0, 0), (53, 57, 60), True),
+                RadioButton(
+                    150, 150, 200, 30, "Play VS Computer", (255, 255, 255),
+                    "gadugi", 18, 15, (0, 0, 0), (53, 57, 60), False)
+            ], False),
+            RadioButtonGroup([
+                RadioButton(
+                    400, 100, 200, 30, "Play as White", (255, 255, 255),
+                    "gadugi", 18, 15, (0, 0, 0), (53, 57, 60), True),
+                RadioButton(
+                    400, 150, 200, 30, "Play as Black", (255, 255, 255),
+                    "gadugi", 18, 15, (0, 0, 0), (53, 57, 60), False),
+                RadioButton(
+                    400, 200, 200, 30, "Play as White/Black", (255, 255, 255),
+                    "gadugi", 18, 15, (0, 0, 0), (53, 57, 60), False)
+            ], False),
+            RadioButtonGroup([
+                RadioButton(
+                    200, 200, 100, 30, "Level: 1", (255, 255, 255),
+                    "gadugi", 18, 15, (0, 0, 0), (53, 57, 60), True),
+                RadioButton(
+                    200, 250, 100, 30, "Level: 2", (255, 255, 255),
+                    "gadugi", 18, 15, (0, 0, 0), (53, 57, 60), False),
+                RadioButton(
+                    200, 300, 100, 30, "Level: 3", (255, 255, 255),
+                    "gadugi", 18, 15, (0, 0, 0), (53, 57, 60), False)
+            ], True)
+        ]
+
+        self.buttons = [
+            Button(150, 450, 150, 50, "Cancel", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(500, 450, 150, 50, "Play", "constantia", 28, (53, 57, 60), (255, 255, 255))
+        ]
+
+    def draw_background(self):
+        self.screen.blit(self.background, (0, 0))
+
+    def draw_container(self):
+        self.container.draw(self.screen)
+
+    def draw_radio_buttons(self):
+        for radio_button_group in self.radio_button_groups:
+            for radio_button in radio_button_group:
+                if not radio_button_group.is_hidden:
+                    radio_button.draw(self.screen)
+
+    def draw_buttons(self):
+        for button in self.buttons:
+            button.draw(self.screen)
+
+    def draw(self):
+        self.draw_background()
+        self.draw_container()
+        self.draw_radio_buttons()
+        self.draw_buttons()
+
+    def handle_event(self, event):
+        if event.type == pg.MOUSEBUTTONUP:
+            mouse_pos = pg.mouse.get_pos()
+            for radio_button_group in self.radio_button_groups:
+                for radio_button in radio_button_group:
+                    if radio_button.rect.collidepoint(mouse_pos):
+                        radio_button_group.manage_select(radio_button, self.screen)
+                        if radio_button.text == "Play VS Myself":
+                            self.radio_button_groups[2].is_hidden = True
+                            self.draw()
+                        elif radio_button.text == "Play VS Computer":
+                            self.radio_button_groups[2].is_hidden = False
+                            self.draw()
+
+            if self.buttons[0].rect.collidepoint(mouse_pos):
+                menu = Menu(self.background)
+                menu.draw()
+                return menu
+            elif self.buttons[1].rect.collidepoint(mouse_pos):
+                print("You clicked Play")
+
         return self
