@@ -2,23 +2,27 @@ import sys
 
 import pygame as pg
 
+from board import Board
+from game_state import GameState
 from gui_elements import Button, Container, RadioButton, RadioButtonGroup
 
 
 class Window():
-    def __init__(self):
-        self.width = 800
-        self.height = 600
-        self.window_caption = "Draughts Game Analysis"
+    def __init__(self, width, height, window_caption):
+        self.width = width
+        self.height = height
+        self.window_caption = window_caption
 
+    def create_screen(self):
         pg.display.set_caption(self.window_caption)
-        self.screen = pg.display.set_mode((self.width, self.height))
+        return pg.display.set_mode((self.width, self.height))
 
 
-class Menu(Window):
-    def __init__(self, background):
-        super().__init__()
-        self.background = background
+class Menu():
+    def __init__(self, screen, image_manager):
+        self.screen = screen
+        self.image_manager = image_manager
+        self.images = self.image_manager.get_images(["background"])
 
         self.container = Container(250, 75, 300, 450, (82, 85, 84))
 
@@ -31,7 +35,7 @@ class Menu(Window):
         ]
 
     def draw_background(self):
-        self.screen.blit(self.background, (0, 0))
+        self.screen.blit(self.images["background"], (0, 0))
 
     def draw_container(self):
         self.container.draw(self.screen)
@@ -49,7 +53,7 @@ class Menu(Window):
         if event.type == pg.MOUSEBUTTONUP:
             mouse_pos = pg.mouse.get_pos()
             if self.buttons[0].rect.collidepoint(mouse_pos):
-                game_options = GameOptions(self.background)
+                game_options = GameOptions(self.screen, self.image_manager)
                 game_options.draw()
                 return game_options
             elif self.buttons[1].rect.collidepoint(mouse_pos):
@@ -63,10 +67,14 @@ class Menu(Window):
         return self
 
 
-class GameOptions(Window):
-    def __init__(self, background):
-        super().__init__()
-        self.background = background
+class GameOptions():
+    def __init__(self, screen, image_manager):
+        self.screen = screen
+        self.image_manager = image_manager
+        self.images = self.image_manager.get_images(["background"])
+        self.opponent_option = "Human"
+        self.side_option = "White"
+        self.level_option = 1
 
         self.container = Container(100, 50, 600, 500, (82, 85, 84))
 
@@ -109,7 +117,7 @@ class GameOptions(Window):
         ]
 
     def draw_background(self):
-        self.screen.blit(self.background, (0, 0))
+        self.screen.blit(self.images["background"], (0, 0))
 
     def draw_container(self):
         self.container.draw(self.screen)
@@ -133,22 +141,116 @@ class GameOptions(Window):
     def handle_event(self, event):
         if event.type == pg.MOUSEBUTTONUP:
             mouse_pos = pg.mouse.get_pos()
+            if self.buttons[0].rect.collidepoint(mouse_pos):
+                menu = Menu(self.screen, self.image_manager)
+                menu.draw()
+                return menu
+            elif self.buttons[1].rect.collidepoint(mouse_pos):
+                game_screen = GameScreen(
+                    self.screen, self.image_manager, self.opponent_option, self.side_option, self.level_option)
+                game_screen.draw()
+                return game_screen
             for radio_button_group in self.radio_button_groups:
                 for radio_button in radio_button_group:
                     if radio_button.rect.collidepoint(mouse_pos):
                         radio_button_group.manage_select(radio_button, self.screen)
                         if radio_button.text == "Play VS Myself":
                             self.radio_button_groups[2].is_hidden = True
+                            self.opponent_option = "Human"
                             self.draw()
                         elif radio_button.text == "Play VS Computer":
+                            self.opponent_option = "Computer"
                             self.radio_button_groups[2].is_hidden = False
                             self.draw()
+                        elif radio_button.text == "Play as White":
+                            self.side_option = "White"
+                        elif radio_button.text == "Play as Black":
+                            self.side_option = "Black"
+                        elif radio_button.text == "Play as White/Black":
+                            self.side_option = "Random"
+                        elif radio_button.text == "Level: 1":
+                            self.level_option = 1
+                        elif radio_button.text == "Level: 2":
+                            self.level_option = 2
+                        elif radio_button.text == "Level: 3":
+                            self.level_option = 3
+        return self
 
-            if self.buttons[0].rect.collidepoint(mouse_pos):
-                menu = Menu(self.background)
-                menu.draw()
-                return menu
-            elif self.buttons[1].rect.collidepoint(mouse_pos):
-                print("You clicked Play")
 
+class GameScreen():
+    def __init__(self, screen, image_manager, opponent, playing_color, skill_level):
+        self.screen = screen
+        self.image_manager = image_manager
+        self.images = self.image_manager.get_images(["wp", "bp", "wk", "bk"])
+        self.container = Container(0, 0, 800, 600, (82, 85, 84))
+
+        self.board = Board(50, 50, 400, [(238, 213, 183), (139, 115, 85)], 26, self.images)
+
+        self.game_state = GameState([
+            ["++", "bp", "++", "bp", "++", "bp", "++", "bp", "++", "bp"],
+            ["bp", "++", "bp", "++", "bp", "++", "bp", "++", "bp", "++"],
+            ["++", "bp", "++", "bp", "++", "bp", "++", "bp", "++", "bp"],
+            ["bp", "++", "bp", "++", "bp", "++", "bp", "++", "bp", "++"],
+            ["++", "--", "++", "--", "++", "--", "++", "--", "++", "--"],
+            ["--", "++", "--", "++", "--", "++", "--", "++", "--", "++"],
+            ["++", "wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp"],
+            ["wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp", "++"],
+            ["++", "wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp"],
+            ["wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp", "++"]],
+            True, opponent, playing_color, skill_level)
+        if self.game_state.is_computer_turn():
+            self.game_state.make_computer_move()
+            self.board.draw(self.screen, self.game_state.position)
+            self.game_state.update_game_state()
+
+        self.button = Button(100, 500, 150, 50, "Leave", "constantia", 28, (53, 57, 60), (255, 255, 255))
+
+    def draw_container(self):
+        self.container.draw(self.screen)
+
+    def draw_board(self):
+        self.board.draw(self.screen, self.game_state.position)
+
+    def draw_buttons(self):
+        self.button.draw(self.screen)
+
+    def draw(self):
+        self.draw_container()
+        self.draw_board()
+        self.draw_buttons()
+
+    def handle_event(self, event):
+        if event.type == pg.MOUSEBUTTONUP:
+            mouse_pos = pg.mouse.get_pos()
+            if self.board.rect.collidepoint(mouse_pos):
+                clicked_square = self.board.get_square(mouse_pos)
+                self.board.move_in_progress += clicked_square
+                if self.game_state.click_is_legal(self.board.move_in_progress):
+                    if self.game_state.move_is_legal(self.board.move_in_progress):
+                        self.game_state.make_move(self.board.move_in_progress)
+                        self.board.draw(self.screen, self.game_state.position)
+                        pg.display.update()
+                        self.game_state.update_game_state()
+                        if self.game_state.is_computer_turn():
+                            self.game_state.make_computer_move()
+                            self.board.draw(self.screen, self.game_state.position)
+                            self.game_state.update_game_state()
+                        self.board.move_in_progress = []
+                    else:
+                        self.board.draw(self.screen, self.game_state.position)
+                        self.board.draw_possible_moves(self.screen, self.game_state.legal_moves)
+                        self.board.draw_pieces(self.screen, self.game_state.position)
+                else:
+                    if self.game_state.click_is_legal(clicked_square):
+                        self.board.move_in_progress = clicked_square
+                        self.board.draw(self.screen, self.game_state.position)
+                        self.board.draw_possible_moves(self.screen, self.game_state.legal_moves)
+                        self.board.draw_pieces(self.screen, self.game_state.position)
+                    else:
+                        self.board.draw(self.screen, self.game_state.position)
+                        self.board.move_in_progress = []
+            elif self.button.rect.collidepoint(mouse_pos):
+                game_options = GameOptions(self.screen, self.image_manager)
+                game_options.draw()
+                return game_options
         return self

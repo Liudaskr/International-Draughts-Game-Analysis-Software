@@ -2,19 +2,20 @@ import sys
 
 import pygame as pg
 
-from images import load_images
+from managers import ImageManager
 from screens import Menu, Window
 
 
 def main():
-    background = load_images()
     pg.init()
-    Window()
-    menu = Menu(background)
+    window = Window(800, 600, "Draughts Game Analysis")
+    screen = window.create_screen()
+    image_manager = ImageManager()
+    image_manager.load_images()
+    menu = Menu(screen, image_manager)
     menu.draw()
-    running = True
     current_screen = menu
-    while running:
+    while True:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 sys.exit()

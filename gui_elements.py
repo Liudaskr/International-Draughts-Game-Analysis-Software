@@ -84,7 +84,7 @@ class RadioButtonGroup():
                 return radio_button
 
     def manage_select(self, radio_button, screen):
-        if not radio_button.is_selected:
+        if not radio_button.is_selected and not self.is_hidden:
             is_selected_radio_button = self.find_selected_button()
             is_selected_radio_button.unselect(screen)
             radio_button.select(screen)
