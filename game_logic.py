@@ -343,17 +343,17 @@ class GameLogic():
         piece = position[move[0]//10][move[0] % 10]
         if is_capture:
             for i in range(len(move)-1):
-                row_1, col_1 = divmod(move[i], 10)
-                row_2, col_2 = divmod(move[i+1], 10)
+                row_1, col_1 = move[i] // 10, move[i] % 10
+                row_2, col_2 = move[i+1] // 10, move[i+1] % 10
                 rows = range(row_1, row_2+1) if row_1 <= row_2 else range(row_1, row_2-1, -1)
                 cols = range(col_1, col_2+1) if col_1 <= col_2 else range(col_1, col_2-1, -1)
                 for row, col in zip(rows, cols):
                     position[row][col] = "--"
-                position[move[i]//10][move[i] % 10] = "--"
-                position[move[i+1]//10][move[i+1] % 10] = piece
+                position[move[i] // 10][move[i] % 10] = "--"
+                position[move[i+1] // 10][move[i+1] % 10] = piece
         else:
-            position[move[1]//10][move[1] % 10] = piece
-            position[move[0]//10][move[0] % 10] = "--"
+            position[move[1] // 10][move[1] % 10] = piece
+            position[move[0] // 10][move[0] % 10] = "--"
         position = GameLogic.get_position_with_promotions(position)
         return position
 

@@ -149,6 +149,12 @@ class GameOptions():
                 game_screen = GameScreen(
                     self.screen, self.image_manager, self.opponent_option, self.side_option, self.level_option)
                 game_screen.draw()
+                pg.display.update()
+                if game_screen.game_state.is_computer_turn():
+                    game_screen.game_state.make_computer_move()
+                    game_screen.board.draw(self.screen, game_screen.game_state.position)
+                    game_screen.game_state.update_game_state()
+
                 return game_screen
             for radio_button_group in self.radio_button_groups:
                 for radio_button in radio_button_group:
@@ -184,8 +190,6 @@ class GameScreen():
         self.images = self.image_manager.get_images(["wp", "bp", "wk", "bk"])
         self.container = Container(0, 0, 800, 600, (82, 85, 84))
 
-        self.board = Board(50, 50, 400, [(238, 213, 183), (139, 115, 85)], 26, self.images)
-
         self.game_state = GameState([
             ["++", "bp", "++", "bp", "++", "bp", "++", "bp", "++", "bp"],
             ["bp", "++", "bp", "++", "bp", "++", "bp", "++", "bp", "++"],
@@ -198,10 +202,10 @@ class GameScreen():
             ["++", "wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp"],
             ["wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp", "++"]],
             True, opponent, playing_color, skill_level)
-        if self.game_state.is_computer_turn():
-            self.game_state.make_computer_move()
-            self.board.draw(self.screen, self.game_state.position)
-            self.game_state.update_game_state()
+
+        self.board = Board(
+            50, 50, 400, self.game_state.players[0] == "User",
+            [(238, 213, 183), (139, 115, 85), (139, 76, 57)], (104, 34, 139), 26, self.images)
 
         self.button = Button(100, 500, 150, 50, "Leave", "constantia", 28, (53, 57, 60), (255, 255, 255))
 
@@ -237,15 +241,13 @@ class GameScreen():
                             self.game_state.update_game_state()
                         self.board.move_in_progress = []
                     else:
-                        self.board.draw(self.screen, self.game_state.position)
-                        self.board.draw_possible_moves(self.screen, self.game_state.legal_moves)
-                        self.board.draw_pieces(self.screen, self.game_state.position)
+                        self.board.draw_with_possible_moves(
+                            self.screen, self.game_state.position, self.game_state.legal_moves)
                 else:
                     if self.game_state.click_is_legal(clicked_square):
                         self.board.move_in_progress = clicked_square
-                        self.board.draw(self.screen, self.game_state.position)
-                        self.board.draw_possible_moves(self.screen, self.game_state.legal_moves)
-                        self.board.draw_pieces(self.screen, self.game_state.position)
+                        self.board.draw_with_possible_moves(
+                            self.screen, self.game_state.position, self.game_state.legal_moves)
                     else:
                         self.board.draw(self.screen, self.game_state.position)
                         self.board.move_in_progress = []
