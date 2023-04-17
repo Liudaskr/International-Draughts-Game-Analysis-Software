@@ -52,3 +52,11 @@ class GameState():
             if legal_move == partial_move:
                 return True
         return False
+
+    def to_standard_format(self, move):
+        move = [square // 2 + 1 for square in move]
+        separator = "x" if self.is_capture else "-"
+        return separator.join(str(square) for square in move)
+
+    def to_program_format(self, move):
+        return [int(square) * 2 - 1 - (int(square) - 1) // 5 % 2 for square in move.replace("-", "x").split("x")]
