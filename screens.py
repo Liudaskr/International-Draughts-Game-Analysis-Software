@@ -208,6 +208,11 @@ class GameScreen():
             [(238, 213, 183), (139, 115, 85), (139, 76, 57)], (104, 34, 139), 26, self.images)
 
         self.button = Button(100, 500, 150, 50, "Leave", "constantia", 28, (53, 57, 60), (255, 255, 255))
+        self.game_over_messages = [
+            pg.font.SysFont("constantia", 30).render("White wins!", True, (255, 255, 255)),
+            pg.font.SysFont("constantia", 30).render("Black wins!", True, (255, 255, 255)),
+            pg.font.SysFont("constantia", 30).render("Draw!", True, (255, 255, 255))
+        ]
 
     def draw_container(self):
         self.container.draw(self.screen)
@@ -235,11 +240,30 @@ class GameScreen():
                         self.board.draw(self.screen, self.game_state.position)
                         pg.display.update()
                         self.game_state.update_game_state()
+                        self.board.move_in_progress = []
+                        if self.game_state.game_is_over():
+                            result = self.game_state.get_result()
+                            if result == "White wins!":
+                                self.screen.blit(self.game_over_messages[0], (180, 15))
+                            elif result == "Black wins!":
+                                self.screen.blit(self.game_over_messages[1], (180, 15))
+                                print(self.game_state.move_list)
+                            else:
+                                self.screen.blit(self.game_over_messages[2], (210, 15))
+                            self.game_state.legal_moves = []
                         if self.game_state.is_computer_turn():
                             self.game_state.make_computer_move()
                             self.board.draw(self.screen, self.game_state.position)
                             self.game_state.update_game_state()
-                        self.board.move_in_progress = []
+                            if self.game_state.game_is_over():
+                                result = self.game_state.get_result()
+                                if result == "White wins!":
+                                    self.screen.blit(self.game_over_messages[0], (180, 15))
+                                elif result == "Black wins!":
+                                    self.screen.blit(self.game_over_messages[1], (180, 15))
+                                else:
+                                    self.screen.blit(self.game_over_messages[2], (210, 15))
+                                self.game_state.legal_moves = []
                     else:
                         self.board.draw_with_possible_moves(
                             self.screen, self.game_state.position, self.game_state.legal_moves)

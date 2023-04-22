@@ -340,7 +340,7 @@ class GameLogic():
 
     @staticmethod
     def get_position(position, move, is_capture):
-        piece = position[move[0]//10][move[0] % 10]
+        piece = position[move[0] // 10][move[0] % 10]
         if is_capture:
             for i in range(len(move)-1):
                 row_1, col_1 = move[i] // 10, move[i] % 10
