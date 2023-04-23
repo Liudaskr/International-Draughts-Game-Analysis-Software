@@ -202,7 +202,7 @@ class GameScreen():
             ["wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp", "++"],
             ["++", "wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp"],
             ["wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp", "++"]],
-            False, opponent, playing_color, skill_level)
+            True, opponent, playing_color, skill_level)
 
         self.board = Board(
             50, 50, 400, self.game_state.players[0] == "User",
@@ -215,7 +215,7 @@ class GameScreen():
             pg.font.SysFont("constantia", 30).render("Draw!", True, (255, 255, 255))
         ]
 
-        self.move_list = MoveList(500, 50, 250, 400, "Courier New", 16, (255, 255, 255), (0, 0, 0))
+        self.move_list = MoveList(500, 50, 250, 400, "Courier New", 16, (220, 220, 220), (0, 0, 0))
 
     def draw_container(self):
         self.container.draw(self.screen)
@@ -227,7 +227,7 @@ class GameScreen():
         self.button.draw(self.screen)
 
     def draw_move_list(self):
-        self.move_list.draw(self.screen, self.game_state.move_list)
+        self.move_list.draw(self.screen, self.game_state.standard_to_display_format(self.game_state.move_list))
 
     def draw(self):
         self.draw_container()

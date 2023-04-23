@@ -73,6 +73,16 @@ class GameState():
     def to_program_format(self, move):
         return [int(square) * 2 - 1 - (int(square) - 1) // 5 % 2 for square in move.replace("-", "x").split("x")]
 
+    def standard_to_display_format(self, move_list):
+        display_format_move_list = []
+        for move in move_list:
+            if "x" in move:
+                squares = [square for square in move.split("x")]
+                display_format_move_list.append(squares[0] + "x" + squares[-1])
+            else:
+                display_format_move_list.append(move)
+        return display_format_move_list
+
     def game_is_over(self):
         if not self.legal_moves or self.positions.count(self.position) == 3:
             return True
