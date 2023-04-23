@@ -4,7 +4,8 @@ import pygame as pg
 
 from board import Board
 from game_state import GameState
-from gui_elements import Button, Container, MoveList, RadioButton, RadioButtonGroup
+from gui_elements import Button, Container, InputTextField, MoveList, RadioButton, RadioButtonGroup
+from managers import JsonManager
 
 
 class Window():
@@ -208,14 +209,26 @@ class GameScreen():
             50, 50, 400, self.game_state.players[0] == "User",
             [(238, 213, 183), (139, 115, 85), (139, 76, 57)], (104, 34, 139), 26, self.images)
 
-        self.button = Button(100, 500, 150, 50, "Leave", "constantia", 28, (53, 57, 60), (255, 255, 255))
+        self.buttons = [
+            Button(100, 500, 150, 50, "Leave", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(550, 500, 150, 50, "Save Game", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(325, 525, 150, 50, "Submit", "constantia", 28, (53, 57, 60), (255, 255, 255))
+        ]
         self.game_over_messages = [
             pg.font.SysFont("constantia", 30).render("White wins!", True, (255, 255, 255)),
             pg.font.SysFont("constantia", 30).render("Black wins!", True, (255, 255, 255)),
             pg.font.SysFont("constantia", 30).render("Draw!", True, (255, 255, 255))
         ]
 
-        self.move_list = MoveList(500, 50, 250, 400, "Courier New", 16, (220, 220, 220), (0, 0, 0))
+        self.validation_error_messages = [
+            pg.font.SysFont("constantia", 16).render("The name is too long!", True, (210, 43, 43)),
+            pg.font.SysFont("constantia", 16).render("The name is not unique!", True, (210, 43, 43))
+        ]
+
+        self.move_list = MoveList(500, 150, 250, 300, "Courier New", 16, (220, 220, 220), (0, 0, 0))
+
+        self.input_text_field = InputTextField(
+            300, 475, 200, 30, "Courier", 15, (220, 220, 220), (0, 0, 0), "Provide a name")
 
     def draw_container(self):
         self.container.draw(self.screen)
@@ -224,7 +237,8 @@ class GameScreen():
         self.board.draw(self.screen, self.game_state.position)
 
     def draw_buttons(self):
-        self.button.draw(self.screen)
+        self.buttons[0].draw(self.screen)
+        self.buttons[1].draw(self.screen)
 
     def draw_move_list(self):
         self.move_list.draw(self.screen, self.game_state.standard_to_display_format(self.game_state.move_list))
@@ -238,7 +252,7 @@ class GameScreen():
     def handle_event(self, event):
         if event.type == pg.MOUSEBUTTONUP:
             mouse_pos = pg.mouse.get_pos()
-            if self.board.rect.collidepoint(mouse_pos):
+            if self.board.rect.collidepoint(mouse_pos) and event.button == 1:
                 clicked_square = self.board.get_square(mouse_pos)
                 self.board.move_in_progress += clicked_square
                 if self.game_state.click_is_legal(self.board.move_in_progress):
@@ -255,7 +269,6 @@ class GameScreen():
                                 self.screen.blit(self.game_over_messages[0], (180, 15))
                             elif result == "Black wins!":
                                 self.screen.blit(self.game_over_messages[1], (180, 15))
-                                print(self.game_state.move_list)
                             else:
                                 self.screen.blit(self.game_over_messages[2], (210, 15))
                             self.game_state.legal_moves = []
@@ -284,15 +297,44 @@ class GameScreen():
                     else:
                         self.board.draw(self.screen, self.game_state.position)
                         self.board.move_in_progress = []
-            elif self.button.rect.collidepoint(mouse_pos):
+            elif self.buttons[0].rect.collidepoint(mouse_pos):
                 game_options = GameOptions(self.screen, self.image_manager)
                 game_options.draw()
                 return game_options
-        elif event.type == pg.MOUSEBUTTONDOWN:
-            if event.button == 4:
-                self.move_list.scroll_up()
-                self.draw_move_list()
-            elif event.button == 5:
-                self.move_list.scroll_down()
-                self.draw_move_list()
+            elif self.buttons[1].rect.collidepoint(mouse_pos):
+                self.input_text_field.draw(self.screen)
+                self.buttons[2].draw(self.screen)
+            elif self.input_text_field.rect.collidepoint(mouse_pos):
+                self.input_text_field.make_active()
+            elif self.move_list.rect.collidepoint(mouse_pos):
+                if event.button == 4:
+                    self.move_list.scroll_up()
+                    self.draw_move_list()
+                elif event.button == 5:
+                    self.move_list.scroll_down()
+                    self.draw_move_list()
+            elif self.buttons[2].rect.collidepoint(mouse_pos):
+                file_name = "games.json"
+                game_names = [game['game_name'] for game in JsonManager.load_from_json(file_name)]
+                if self.input_text_field.input_is_unique_game_name(game_names):
+                    game_name = self.input_text_field.input_text
+                    data = self.game_state.get_game_state_dictionary(game_name)
+                    JsonManager.save_to_json(data, file_name)
+                    self.draw()
+                else:
+                    self.screen.fill((82, 85, 84), (315, 455, 200, 20))
+                    self.screen.blit(self.validation_error_messages[1], (315, 455))
+        elif event.type == pg.KEYDOWN:
+            if self.input_text_field.is_active:
+                if event.key == pg.K_BACKSPACE:
+                    self.input_text_field.remove_character_from_text()
+                    self.input_text_field.draw(self.screen)
+                    self.screen.fill((82, 85, 84), (315, 455, 200, 20))
+                else:
+                    if self.input_text_field.input_is_too_long():
+                        self.screen.fill((82, 85, 84), (315, 455, 200, 20))
+                        self.screen.blit(self.validation_error_messages[0], (325, 455))
+                    else:
+                        self.input_text_field.add_character_to_text(event.unicode)
+                        self.input_text_field.draw(self.screen)
         return self

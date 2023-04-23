@@ -108,13 +108,15 @@ class MoveList():
     def draw_move_text(self, screen, move_list):
         y = self.y
         number_of_moves = len(move_list)
-        for i in range(self.scroll_depth, self.scroll_depth+16):
+        for i in range(self.scroll_depth, self.scroll_depth + 12):
             if 2*i < number_of_moves:
-                text = self.font.render(str(i + 1) + ". " + move_list[2*i], True, self.text_color)
-                screen.blit(text, (self.x, y))
+                text = self.font.render(str(i + 1) + ".", True, self.text_color)
+                screen.blit(text, (self.x + 5, y))
+                text = self.font.render(move_list[2*i], True, self.text_color)
+                screen.blit(text, (self.x + 50, y))
             if 2*i + 1 < number_of_moves:
-                text = self.font.render(move_list[2*i+1], True, self.text_color)
-                screen.blit(text, (self.x + 125, y))
+                text = self.font.render(move_list[2*i + 1], True, self.text_color)
+                screen.blit(text, (self.x + 150, y))
             y += 25
 
     def draw(self, screen, move_list):
@@ -127,3 +129,43 @@ class MoveList():
 
     def scroll_down(self):
         self.scroll_depth += 1
+
+
+class InputTextField():
+    def __init__(self, x, y, width, height, font, font_size, rect_color, text_color, input_text):
+        self.x = x
+        self.y = y
+        self.rect = pg.Rect(x, y, width, height)
+        self.font = pg.font.SysFont(font, font_size)
+        self.rect_color = rect_color
+        self.text_color = text_color
+        self.is_active = False
+        self.input_text = input_text
+
+    def draw_input_box(self, screen):
+        pg.draw.rect(screen, self.rect_color, self.rect)
+
+    def draw_input_text(self, screen):
+        text = self.font.render(self.input_text, True, self.text_color)
+        screen.blit(text, (self.x + 5, self.y + 5))
+
+    def draw(self, screen):
+        self.draw_input_box(screen)
+        self.draw_input_text(screen)
+
+    def make_active(self):
+        self.is_active = True
+
+    def add_character_to_text(self, character):
+        self.input_text += character
+
+    def remove_character_from_text(self):
+        self.input_text = self.input_text[:-1]
+
+    def input_is_too_long(self):
+        return self.font.render(self.input_text + " ", True, self.text_color).get_size()[0] > self.rect.width - 5
+            
+    def input_is_unique_game_name(self, game_names):
+        if self.input_text in game_names:
+            return False
+        return True

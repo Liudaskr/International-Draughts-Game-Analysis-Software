@@ -92,3 +92,9 @@ class GameState():
         if not self.legal_moves:
             return "Black wins!" if self.white_to_move else "White wins!"
         return "Draw!"
+
+    def get_game_state_dictionary(self, game_name):
+        return {
+            "game_name": game_name, "players": self.players,
+            "starting_position": self.positions[0], "move_list": self.move_list
+        }
