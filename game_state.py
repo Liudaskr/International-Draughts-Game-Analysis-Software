@@ -7,12 +7,14 @@ from game_logic import GameLogic
 
 class GameState():
     def __init__(self, position, white_to_move, opponent, playing_color, skill_level):
+        self.move_list = []
         self.position = position
         self.positions = [copy.deepcopy(position)]
         self.white_to_move = white_to_move
+        if not white_to_move:
+            self.move_list.append("...")
         self.legal_moves, self.is_capture = GameLogic.get_legal_moves(self.position, self.white_to_move)
         self.players = self.get_players(opponent, playing_color)
-        self.move_list = []
 
         if opponent == "Computer":
             self.engine = Engine(skill_level)

@@ -88,3 +88,42 @@ class RadioButtonGroup():
             is_selected_radio_button = self.find_selected_button()
             is_selected_radio_button.unselect(screen)
             radio_button.select(screen)
+
+
+class MoveList():
+    def __init__(self, x, y, width, height, font, font_size, rect_color, text_color):
+        self.scroll_depth = 0
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.rect = pg.Rect(x, y, width, height)
+        self.font = pg.font.SysFont(font, font_size)
+        self.rect_color = rect_color
+        self.text_color = text_color
+
+    def draw_rect(self, screen):
+        pg.draw.rect(screen, self.rect_color, self.rect)
+
+    def draw_move_text(self, screen, move_list):
+        y = self.y
+        number_of_moves = len(move_list)
+        for i in range(self.scroll_depth, self.scroll_depth+16):
+            if 2*i < number_of_moves:
+                text = self.font.render(str(i + 1) + ". " + move_list[2*i], True, self.text_color)
+                screen.blit(text, (self.x, y))
+            if 2*i + 1 < number_of_moves:
+                text = self.font.render(move_list[2*i+1], True, self.text_color)
+                screen.blit(text, (self.x + 125, y))
+            y += 25
+
+    def draw(self, screen, move_list):
+        self.draw_rect(screen)
+        self.draw_move_text(screen, move_list)
+
+    def scroll_up(self):
+        if self.scroll_depth > 0:
+            self.scroll_depth -= 1
+
+    def scroll_down(self):
+        self.scroll_depth += 1

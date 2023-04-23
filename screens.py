@@ -4,7 +4,7 @@ import pygame as pg
 
 from board import Board
 from game_state import GameState
-from gui_elements import Button, Container, RadioButton, RadioButtonGroup
+from gui_elements import Button, Container, MoveList, RadioButton, RadioButtonGroup
 
 
 class Window():
@@ -153,6 +153,7 @@ class GameOptions():
                 if game_screen.game_state.is_computer_turn():
                     game_screen.game_state.make_computer_move()
                     game_screen.board.draw(self.screen, game_screen.game_state.position)
+                    game_screen.draw_move_list()
                     game_screen.game_state.update_game_state()
 
                 return game_screen
@@ -201,7 +202,7 @@ class GameScreen():
             ["wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp", "++"],
             ["++", "wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp"],
             ["wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp", "++"]],
-            True, opponent, playing_color, skill_level)
+            False, opponent, playing_color, skill_level)
 
         self.board = Board(
             50, 50, 400, self.game_state.players[0] == "User",
@@ -214,6 +215,8 @@ class GameScreen():
             pg.font.SysFont("constantia", 30).render("Draw!", True, (255, 255, 255))
         ]
 
+        self.move_list = MoveList(500, 50, 250, 400, "Courier New", 16, (255, 255, 255), (0, 0, 0))
+
     def draw_container(self):
         self.container.draw(self.screen)
 
@@ -223,10 +226,14 @@ class GameScreen():
     def draw_buttons(self):
         self.button.draw(self.screen)
 
+    def draw_move_list(self):
+        self.move_list.draw(self.screen, self.game_state.move_list)
+
     def draw(self):
         self.draw_container()
         self.draw_board()
         self.draw_buttons()
+        self.draw_move_list()
 
     def handle_event(self, event):
         if event.type == pg.MOUSEBUTTONUP:
@@ -238,8 +245,9 @@ class GameScreen():
                     if self.game_state.move_is_legal(self.board.move_in_progress):
                         self.game_state.make_move(self.board.move_in_progress)
                         self.board.draw(self.screen, self.game_state.position)
-                        pg.display.update()
                         self.game_state.update_game_state()
+                        self.draw_move_list()
+                        pg.display.update()
                         self.board.move_in_progress = []
                         if self.game_state.game_is_over():
                             result = self.game_state.get_result()
@@ -255,6 +263,7 @@ class GameScreen():
                             self.game_state.make_computer_move()
                             self.board.draw(self.screen, self.game_state.position)
                             self.game_state.update_game_state()
+                            self.draw_move_list()
                             if self.game_state.game_is_over():
                                 result = self.game_state.get_result()
                                 if result == "White wins!":
@@ -279,4 +288,11 @@ class GameScreen():
                 game_options = GameOptions(self.screen, self.image_manager)
                 game_options.draw()
                 return game_options
+        elif event.type == pg.MOUSEBUTTONDOWN:
+            if event.button == 4:
+                self.move_list.scroll_up()
+                self.draw_move_list()
+            elif event.button == 5:
+                self.move_list.scroll_down()
+                self.draw_move_list()
         return self
