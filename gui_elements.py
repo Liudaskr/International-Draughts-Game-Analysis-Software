@@ -156,6 +156,9 @@ class InputTextField():
     def make_active(self):
         self.is_active = True
 
+    def make_inactive(self):
+        self.is_active = False
+
     def add_character_to_text(self, character):
         self.input_text += character
 
@@ -169,3 +172,48 @@ class InputTextField():
         if self.input_text in game_names:
             return False
         return True
+
+
+class GameList():
+    def __init__(self, x, y, width, height, font, font_size, rect_color, text_color):
+        self.x = x
+        self.y = y
+        self.rect = pg.Rect(x, y, width, height)
+        self.font = pg.font.SysFont(font, font_size)
+        self.rect_color = rect_color
+        self.text_color = text_color
+        self.scroll_depth = 0
+
+    def draw_rect(self, screen):
+        pg.draw.rect(screen, self.rect_color, self.rect)
+
+    def draw_games(self, screen, games):
+        y = self.y
+        number_of_games = len(games)
+        game_rects = []
+        for i in range(self.scroll_depth, self.scroll_depth + 10):
+            if i < number_of_games:
+                game_rects.append(pg.Rect(self.x, y, self.rect.width, 40))
+                text = self.font.render(str(i + 1) + ".", True, self.text_color)
+                screen.blit(text, (self.x + 5, y))
+                text = self.font.render(games[i], True, self.text_color)
+                screen.blit(text, (self.x + 50, y))
+            y += 40
+        self.game_rects = game_rects
+
+    def draw(self, screen, games):
+        self.draw_rect(screen)
+        self.draw_games(screen, games)
+
+    def scroll_up(self):
+        if self.scroll_depth > 0:
+            self.scroll_depth -= 1
+
+    def scroll_down(self):
+        self.scroll_depth += 1
+
+    def get_game_clicked(self, mouse_pos):
+        for i, game_rect in enumerate(self.game_rects):
+            if game_rect.collidepoint(mouse_pos):
+                return i + self.scroll_depth
+        return None

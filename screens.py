@@ -4,7 +4,7 @@ import pygame as pg
 
 from board import Board
 from game_state import GameState
-from gui_elements import Button, Container, InputTextField, MoveList, RadioButton, RadioButtonGroup
+from gui_elements import Button, Container, GameList, InputTextField, MoveList, RadioButton, RadioButtonGroup
 from managers import JsonManager
 
 
@@ -58,7 +58,9 @@ class Menu():
                 game_options.draw()
                 return game_options
             elif self.buttons[1].rect.collidepoint(mouse_pos):
-                print("You clicked Save Game")
+                saved_games = SavedGames(self.screen, self.image_manager)
+                saved_games.draw()
+                return saved_games
             elif self.buttons[2].rect.collidepoint(mouse_pos):
                 print("You clicked Create Analysis")
             elif self.buttons[3].rect.collidepoint(mouse_pos):
@@ -190,6 +192,7 @@ class GameScreen():
         self.screen = screen
         self.image_manager = image_manager
         self.images = self.image_manager.get_images(["wp", "bp", "wk", "bk"])
+
         self.container = Container(0, 0, 800, 600, (82, 85, 84))
 
         self.game_state = GameState([
@@ -203,7 +206,7 @@ class GameScreen():
             ["wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp", "++"],
             ["++", "wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp"],
             ["wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp", "++"]],
-            True, opponent, playing_color, skill_level)
+            True, opponent, playing_color, skill_level, [])
 
         self.board = Board(
             50, 50, 400, self.game_state.players[0] == "User",
@@ -297,6 +300,7 @@ class GameScreen():
                     else:
                         self.board.draw(self.screen, self.game_state.position)
                         self.board.move_in_progress = []
+                self.input_text_field.make_inactive()
             elif self.buttons[0].rect.collidepoint(mouse_pos):
                 game_options = GameOptions(self.screen, self.image_manager)
                 game_options.draw()
@@ -304,6 +308,7 @@ class GameScreen():
             elif self.buttons[1].rect.collidepoint(mouse_pos):
                 self.input_text_field.draw(self.screen)
                 self.buttons[2].draw(self.screen)
+                self.input_text_field.make_inactive()
             elif self.input_text_field.rect.collidepoint(mouse_pos):
                 self.input_text_field.make_active()
             elif self.move_list.rect.collidepoint(mouse_pos):
@@ -313,6 +318,7 @@ class GameScreen():
                 elif event.button == 5:
                     self.move_list.scroll_down()
                     self.draw_move_list()
+                self.input_text_field.make_inactive()
             elif self.buttons[2].rect.collidepoint(mouse_pos):
                 file_name = "games.json"
                 game_names = [game['game_name'] for game in JsonManager.load_from_json(file_name)]
@@ -321,10 +327,13 @@ class GameScreen():
                     data = self.game_state.get_game_state_dictionary(game_name)
                     JsonManager.save_to_json(data, file_name)
                     self.draw()
+                    self.input_text_field.make_inactive()
                 else:
                     self.screen.fill((82, 85, 84), (315, 455, 200, 20))
                     self.screen.blit(self.validation_error_messages[1], (315, 455))
-        elif event.type == pg.KEYDOWN:
+            else:
+                self.input_text_field.make_inactive()
+        elif event.type == pg.KEYDOWN and self.input_text_field.is_active:
             if self.input_text_field.is_active:
                 if event.key == pg.K_BACKSPACE:
                     self.input_text_field.remove_character_from_text()
@@ -337,4 +346,139 @@ class GameScreen():
                     else:
                         self.input_text_field.add_character_to_text(event.unicode)
                         self.input_text_field.draw(self.screen)
+        return self
+
+
+class SavedGames():
+    def __init__(self, screen, image_manager):
+        self.screen = screen
+        self.image_manager = image_manager
+        self.container = Container(0, 0, 800, 600, (82, 85, 84))
+        self.games = JsonManager.load_from_json("games.json")
+        self.button = Button(100, 500, 150, 50, "Cancel", "constantia", 28, (53, 57, 60), (255, 255, 255))
+        self.game_list = GameList(150, 25, 400, 400, "Courier New", 25, (220, 220, 220), (0, 0, 0))
+
+    def draw_container(self):
+        self.container.draw(self.screen)
+
+    def draw_game_list(self):
+        game_names = [game['game_name'] for game in self.games]
+        self.game_list.draw(self.screen, game_names)
+
+    def draw_button(self):
+        self.button.draw(self.screen)
+
+    def draw(self):
+        self.draw_container()
+        self.draw_game_list()
+        self.draw_button()
+
+    def handle_event(self, event):
+        if event.type == pg.MOUSEBUTTONUP:
+            mouse_pos = pg.mouse.get_pos()
+            if self.game_list.rect.collidepoint(mouse_pos):
+                if event.button == 4:
+                    self.game_list.scroll_up()
+                    self.draw_game_list()
+                elif event.button == 5:
+                    self.game_list.scroll_down()
+                    self.draw_game_list()
+                if event.button == 1:
+                    game_number = self.game_list.get_game_clicked(mouse_pos)
+                    if game_number is not None:
+                        game = self.games[game_number]
+                        starting_position = game["starting_position"]
+                        moves = game["move_list"]
+                        if moves:
+                            white_to_move = False if game["move_list"][0] == "..." else True
+                        else:
+                            white_to_move = None
+                        playing_color = "White" if game["players"][0] == "User" else "Black"
+                        view_game = ViewGame(
+                            self.screen, self.image_manager, starting_position, moves, white_to_move, playing_color)
+                        view_game.draw()
+                        return view_game
+            elif self.button.rect.collidepoint(mouse_pos) and event.button == 1:
+                menu = Menu(self.screen, self.image_manager)
+                menu.draw()
+                return menu
+        return self
+
+
+class ViewGame():
+    def __init__(self, screen, image_manager, starting_position, moves, white_to_move, playing_color):
+        self.screen = screen
+        self.image_manager = image_manager
+        self.images = self.image_manager.get_images(["wp", "bp", "wk", "bk"])
+        self.starting_position = starting_position
+        self.moves = moves
+        self.white_to_move = white_to_move
+        self.playing_color = playing_color
+        self.current_position_index = 0
+
+        self.container = Container(0, 0, 800, 600, (82, 85, 84))
+
+        self.game_state = GameState(
+            self.starting_position, self.white_to_move, None, self.playing_color, None, self.moves)
+        self.positions = self.game_state.get_all_positions_of_game()
+
+        self.board = Board(
+            50, 50, 400, self.game_state.players[0] == "User",
+            [(238, 213, 183), (139, 115, 85), (139, 76, 57)], (104, 34, 139), 26, self.images)
+
+        self.buttons = [
+            Button(100, 500, 150, 50, "Leave", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(520, 450, 40, 30, "<<", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(565, 450, 40, 30, "<", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(640, 450, 40, 30, ">", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(685, 450, 40, 30, ">>", "constantia", 28, (53, 57, 60), (255, 255, 255))
+        ]
+
+        self.move_list = MoveList(500, 150, 250, 300, "Courier New", 16, (220, 220, 220), (0, 0, 0))
+
+    def draw_container(self):
+        self.container.draw(self.screen)
+
+    def draw_board(self):
+        self.board.draw(self.screen, self.game_state.position)
+
+    def draw_buttons(self):
+        for button in self.buttons:
+            button.draw(self.screen)
+
+    def draw_move_list(self):
+        self.move_list.draw(self.screen, self.game_state.standard_to_display_format(self.game_state.move_list))
+
+    def draw(self):
+        self.draw_container()
+        self.draw_board()
+        self.draw_buttons()
+        self.draw_move_list()
+
+    def handle_event(self, event):
+        if event.type == pg.MOUSEBUTTONUP:
+            mouse_pos = pg.mouse.get_pos()
+            if event.button == 1:
+                if self.buttons[0].rect.collidepoint(mouse_pos):
+                    saved_games = SavedGames(self.screen, self.image_manager)
+                    saved_games.draw()
+                    return saved_games
+                elif self.buttons[1].rect.collidepoint(mouse_pos):
+                    self.current_position_index = 0
+                elif self.buttons[2].rect.collidepoint(mouse_pos):
+                    if self.current_position_index > 0:
+                        self.current_position_index -= 1
+                elif self.buttons[3].rect.collidepoint(mouse_pos):
+                    if self.current_position_index < len(self.moves):
+                        self.current_position_index += 1
+                elif self.buttons[4].rect.collidepoint(mouse_pos):
+                    self.current_position_index = len(self.moves)
+                self.board.draw(self.screen, self.positions[self.current_position_index])
+            elif self.move_list.rect.collidepoint(mouse_pos):
+                if event.button == 4:
+                    self.move_list.scroll_up()
+                    self.draw_move_list()
+                elif event.button == 5:
+                    self.move_list.scroll_down()
+                    self.draw_move_list()
         return self

@@ -6,12 +6,12 @@ from game_logic import GameLogic
 
 
 class GameState():
-    def __init__(self, position, white_to_move, opponent, playing_color, skill_level):
-        self.move_list = []
+    def __init__(self, position, white_to_move, opponent, playing_color, skill_level, move_list):
+        self.move_list = move_list
         self.position = position
         self.positions = [copy.deepcopy(position)]
         self.white_to_move = white_to_move
-        if not white_to_move:
+        if not white_to_move and not self.move_list:
             self.move_list.append("...")
         self.legal_moves, self.is_capture = GameLogic.get_legal_moves(self.position, self.white_to_move)
         self.players = self.get_players(opponent, playing_color)
@@ -98,3 +98,17 @@ class GameState():
             "game_name": game_name, "players": self.players,
             "starting_position": self.positions[0], "move_list": self.move_list
         }
+
+    def get_all_positions_of_game(self):
+        positions = []
+        position = self.position
+        positions.append(position)
+        for move in self.move_list:
+            if move == "...":
+                positions.append(position)
+                continue
+            program_format_move = self.to_program_format(move)
+            is_capture = True if "x" in move else False
+            position = GameLogic.get_position(copy.deepcopy(position), program_format_move, is_capture)
+            positions.append(position)
+        return positions
