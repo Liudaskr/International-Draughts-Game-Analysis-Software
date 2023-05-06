@@ -101,27 +101,59 @@ class MoveList():
         self.font = pg.font.SysFont(font, font_size)
         self.rect_color = rect_color
         self.text_color = text_color
+        self.move_number_rects = []
+        self.move_notation_rects = []
 
     def draw_rect(self, screen):
         pg.draw.rect(screen, self.rect_color, self.rect)
+        pg.draw.rect(screen, (0, 0, 0), self.rect, 2)
 
     def draw_move_text(self, screen, move_list):
         y = self.y
         number_of_moves = len(move_list)
+        move_number_rects = []
+        move_notation_rects = []
         for i in range(self.scroll_depth, self.scroll_depth + 12):
             if 2*i < number_of_moves:
+                move_number_rects.append(pg.Rect(self.x, y, self.rect.width - 200, 25))
                 text = self.font.render(str(i + 1) + ".", True, self.text_color)
-                screen.blit(text, (self.x + 5, y))
+                text_rect = text.get_rect()
+                text_rect.center = move_number_rects[-1].center
+                screen.blit(text, text_rect)
+                move_notation_rects.append(pg.Rect(self.x + 50, y, self.rect.width - 150, 25))
                 text = self.font.render(move_list[2*i], True, self.text_color)
-                screen.blit(text, (self.x + 50, y))
+                text_rect = text.get_rect()
+                text_rect.center = move_notation_rects[-1].center
+                screen.blit(text, text_rect)
             if 2*i + 1 < number_of_moves:
+                move_notation_rects.append(pg.Rect(self.x + 150, y, self.rect.width - 150, 25))
                 text = self.font.render(move_list[2*i + 1], True, self.text_color)
-                screen.blit(text, (self.x + 150, y))
+                text_rect = text.get_rect()
+                text_rect.center = move_notation_rects[-1].center
+                screen.blit(text, text_rect)
             y += 25
+        self.move_number_rects = move_number_rects
+        self.move_notation_rects = move_notation_rects
 
-    def draw(self, screen, move_list):
+    def draw_move_number_rects(self, screen):
+        for number_rect in self.move_number_rects:
+            pg.draw.rect(screen, (0, 0, 0), number_rect, 1)
+
+    def draw_move_notation_rects(self, screen):
+        for notation_rects in self.move_notation_rects:
+            pg.draw.rect(screen, (0, 0, 0), notation_rects, 1)
+
+    def draw_current_move_rect(self, screen, move_number):
+        first_move_number = self.scroll_depth * 2 + 1
+        if first_move_number <= move_number < first_move_number + 24:
+            pg.draw.rect(screen, (44, 140, 64), self.move_notation_rects[move_number-first_move_number], 3)
+
+    def draw(self, screen, move_list, move_number):
         self.draw_rect(screen)
         self.draw_move_text(screen, move_list)
+        self.draw_move_number_rects(screen)
+        self.draw_move_notation_rects(screen)
+        self.draw_current_move_rect(screen, move_number)
 
     def scroll_up(self):
         if self.scroll_depth > 0:

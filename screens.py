@@ -156,6 +156,7 @@ class GameOptions():
                 if game_screen.game_state.is_computer_turn():
                     game_screen.game_state.make_computer_move()
                     game_screen.board.draw(self.screen, game_screen.game_state.position)
+                    game_screen.current_move_index += 1
                     game_screen.draw_move_list()
                     game_screen.game_state.update_game_state()
 
@@ -192,6 +193,7 @@ class GameScreen():
         self.screen = screen
         self.image_manager = image_manager
         self.images = self.image_manager.get_images(["wp", "bp", "wk", "bk"])
+        self.current_move_index = 0
 
         self.container = Container(0, 0, 800, 600, (82, 85, 84))
 
@@ -245,7 +247,10 @@ class GameScreen():
         self.buttons[1].draw(self.screen)
 
     def draw_move_list(self):
-        self.move_list.draw(self.screen, self.game_state.standard_to_display_format(self.game_state.move_list))
+        self.move_list.draw(
+            self.screen, self.game_state.standard_to_display_format(self.game_state.move_list),
+            self.current_move_index
+        )
 
     def draw(self):
         self.draw_container()
@@ -264,8 +269,6 @@ class GameScreen():
                         self.game_state.make_move(self.board.move_in_progress)
                         self.board.draw(self.screen, self.game_state.position)
                         self.game_state.update_game_state()
-                        self.draw_move_list()
-                        pg.display.update()
                         self.board.move_in_progress = []
                         if self.game_state.game_is_over():
                             result = self.game_state.get_result()
@@ -276,11 +279,14 @@ class GameScreen():
                             else:
                                 self.screen.blit(self.game_over_messages[2], (210, 15))
                             self.game_state.legal_moves = []
+                        else:
+                            self.current_move_index += 1
+                            self.draw_move_list()
+                            pg.display.update()
                         if self.game_state.is_computer_turn():
                             self.game_state.make_computer_move()
                             self.board.draw(self.screen, self.game_state.position)
                             self.game_state.update_game_state()
-                            self.draw_move_list()
                             if self.game_state.game_is_over():
                                 result = self.game_state.get_result()
                                 if result == "White wins!":
@@ -290,6 +296,9 @@ class GameScreen():
                                 else:
                                     self.screen.blit(self.game_over_messages[2], (210, 15))
                                 self.game_state.legal_moves = []
+                            else:
+                                self.current_move_index += 1
+                                self.draw_move_list()
                     else:
                         self.board.draw_with_possible_moves(
                             self.screen, self.game_state.position, self.game_state.legal_moves)
@@ -425,6 +434,7 @@ class ViewGame():
 
         self.game_state = GameState(
             self.starting_position, self.white_to_move, None, self.playing_color, None, self.moves)
+
         self.positions = self.game_state.get_all_positions_of_game()
 
         self.board = Board(
@@ -435,8 +445,8 @@ class ViewGame():
             Button(100, 500, 150, 50, "Leave", "constantia", 28, (53, 57, 60), (255, 255, 255)),
             Button(520, 450, 40, 30, "<<", "constantia", 28, (53, 57, 60), (255, 255, 255)),
             Button(565, 450, 40, 30, "<", "constantia", 28, (53, 57, 60), (255, 255, 255)),
-            Button(640, 450, 40, 30, ">", "constantia", 28, (53, 57, 60), (255, 255, 255)),
-            Button(685, 450, 40, 30, ">>", "constantia", 28, (53, 57, 60), (255, 255, 255))
+            Button(645, 450, 40, 30, ">", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(690, 450, 40, 30, ">>", "constantia", 28, (53, 57, 60), (255, 255, 255))
         ]
 
         self.move_list = MoveList(500, 150, 250, 300, "Courier New", 16, (220, 220, 220), (0, 0, 0))
@@ -452,7 +462,10 @@ class ViewGame():
             button.draw(self.screen)
 
     def draw_move_list(self):
-        self.move_list.draw(self.screen, self.game_state.standard_to_display_format(self.game_state.move_list))
+        self.move_list.draw(
+            self.screen, self.game_state.standard_to_display_format(self.game_state.move_list),
+            self.current_position_index
+        )
 
     def draw(self):
         self.draw_container()
@@ -470,14 +483,18 @@ class ViewGame():
                     return saved_games
                 elif self.buttons[1].rect.collidepoint(mouse_pos):
                     self.current_position_index = 0
+                    self.draw_move_list()
                 elif self.buttons[2].rect.collidepoint(mouse_pos):
                     if self.current_position_index > 0:
                         self.current_position_index -= 1
+                        self.draw_move_list()
                 elif self.buttons[3].rect.collidepoint(mouse_pos):
                     if self.current_position_index < len(self.moves):
                         self.current_position_index += 1
+                        self.draw_move_list()
                 elif self.buttons[4].rect.collidepoint(mouse_pos):
                     self.current_position_index = len(self.moves)
+                    self.draw_move_list()
                 self.board.draw(self.screen, self.positions[self.current_position_index])
             elif self.move_list.rect.collidepoint(mouse_pos):
                 if event.button == 4:
