@@ -140,6 +140,7 @@ class InputTextField():
         self.rect_color = rect_color
         self.text_color = text_color
         self.is_active = False
+        self.is_visible = False
         self.input_text = input_text
 
     def draw_input_box(self, screen):
@@ -158,6 +159,12 @@ class InputTextField():
 
     def make_inactive(self):
         self.is_active = False
+
+    def make_visible(self):
+        self.is_visible = True
+
+    def make_invisible(self):
+        self.is_visible = False
 
     def add_character_to_text(self, character):
         self.input_text += character

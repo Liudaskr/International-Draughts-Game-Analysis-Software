@@ -309,7 +309,7 @@ class GameScreen():
             elif self.buttons[1].rect.collidepoint(mouse_pos):
                 self.input_text_field.draw(self.screen)
                 self.buttons[2].draw(self.screen)
-                self.input_text_field.make_inactive()
+                self.input_text_field.make_visible()
             elif self.input_text_field.rect.collidepoint(mouse_pos):
                 self.input_text_field.make_active()
             elif self.move_list.rect.collidepoint(mouse_pos):
@@ -320,7 +320,7 @@ class GameScreen():
                     self.move_list.scroll_down()
                     self.draw_move_list()
                 self.input_text_field.make_inactive()
-            elif self.buttons[2].rect.collidepoint(mouse_pos):
+            elif self.buttons[2].rect.collidepoint(mouse_pos) and self.input_text_field.is_visible:
                 file_name = "games.json"
                 game_names = [game['game_name'] for game in JsonManager.load_from_json(file_name)]
                 if self.input_text_field.input_is_empty():
@@ -335,9 +335,10 @@ class GameScreen():
                     JsonManager.save_to_json(data, file_name)
                     self.draw()
                     self.input_text_field.make_inactive()
+                    self.input_text_field.make_invisible()
             else:
                 self.input_text_field.make_inactive()
-        elif event.type == pg.KEYDOWN and self.input_text_field.is_active:
+        elif event.type == pg.KEYDOWN and self.input_text_field.is_active and self.input_text_field.is_visible:
             if self.input_text_field.is_active:
                 if event.key == pg.K_BACKSPACE:
                     self.input_text_field.remove_character_from_text()
