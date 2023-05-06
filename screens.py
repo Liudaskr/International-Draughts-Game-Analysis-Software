@@ -225,6 +225,7 @@ class GameScreen():
 
         self.validation_error_messages = [
             pg.font.SysFont("constantia", 16).render("The name is too long!", True, (210, 43, 43)),
+            pg.font.SysFont("constantia", 16).render("The name can't be empty!", True, (210, 43, 43)),
             pg.font.SysFont("constantia", 16).render("The name is not unique!", True, (210, 43, 43))
         ]
 
@@ -322,15 +323,18 @@ class GameScreen():
             elif self.buttons[2].rect.collidepoint(mouse_pos):
                 file_name = "games.json"
                 game_names = [game['game_name'] for game in JsonManager.load_from_json(file_name)]
-                if self.input_text_field.input_is_unique_game_name(game_names):
+                if self.input_text_field.input_is_empty():
+                    self.screen.fill((82, 85, 84), (315, 455, 200, 20))
+                    self.screen.blit(self.validation_error_messages[1], (315, 455))
+                elif not self.input_text_field.input_is_unique_game_name(game_names):
+                    self.screen.fill((82, 85, 84), (315, 455, 200, 20))
+                    self.screen.blit(self.validation_error_messages[2], (315, 455))
+                else:
                     game_name = self.input_text_field.input_text
                     data = self.game_state.get_game_state_dictionary(game_name)
                     JsonManager.save_to_json(data, file_name)
                     self.draw()
                     self.input_text_field.make_inactive()
-                else:
-                    self.screen.fill((82, 85, 84), (315, 455, 200, 20))
-                    self.screen.blit(self.validation_error_messages[1], (315, 455))
             else:
                 self.input_text_field.make_inactive()
         elif event.type == pg.KEYDOWN and self.input_text_field.is_active:

@@ -165,6 +165,9 @@ class InputTextField():
     def remove_character_from_text(self):
         self.input_text = self.input_text[:-1]
 
+    def input_is_empty(self):
+        return not bool(self.input_text)
+
     def input_is_too_long(self):
         return self.font.render(self.input_text + " ", True, self.text_color).get_size()[0] > self.rect.width - 5
             
