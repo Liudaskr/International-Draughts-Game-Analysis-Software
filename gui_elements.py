@@ -78,14 +78,14 @@ class RadioButtonGroup():
     def __iter__(self):
         return iter(self.radio_buttons)
 
-    def find_selected_button(self):
+    def get_selected_button(self):
         for radio_button in self.radio_buttons:
             if radio_button.is_selected:
                 return radio_button
 
     def manage_select(self, radio_button, screen):
         if not radio_button.is_selected and not self.is_hidden:
-            is_selected_radio_button = self.find_selected_button()
+            is_selected_radio_button = self.get_selected_button()
             is_selected_radio_button.unselect(screen)
             radio_button.select(screen)
 
@@ -209,7 +209,7 @@ class InputTextField():
 
     def input_is_too_long(self):
         return self.font.render(self.input_text + " ", True, self.text_color).get_size()[0] > self.rect.width - 5
-            
+
     def input_is_unique_game_name(self, game_names):
         if self.input_text in game_names:
             return False
@@ -259,3 +259,36 @@ class GameList():
             if game_rect.collidepoint(mouse_pos):
                 return i + self.scroll_depth
         return None
+
+
+class ImageRadioButton():
+    def __init__(self, x, y, width, height, rect_color, selected_border_color, image, is_selected):
+        self.rect = pg.Rect(x, y, width, height)
+        self.rect_color = rect_color
+        self.selected_border_color = selected_border_color
+        self.image = image
+        self.is_selected = is_selected
+
+    def draw_rect(self, screen):
+        pg.draw.rect(screen, self.rect_color, self.rect)
+        if self.is_selected:
+            pg.draw.rect(screen, self.selected_border_color, self.rect, 2)
+
+    def draw_image(self, screen):
+        image_rect = self.image.get_rect()
+        image_rect.width = self.rect.width - 10
+        image_rect.height = self.rect.height - 10
+        image_rect.center = self.rect.center
+        screen.blit(pg.transform.smoothscale(self.image, (image_rect.width, image_rect.height)), image_rect)
+
+    def draw(self, screen):
+        self.draw_rect(screen)
+        self.draw_image(screen)
+
+    def select(self, screen):
+        self.is_selected = True
+        self.draw(screen)
+
+    def unselect(self, screen):
+        self.is_selected = False
+        self.draw(screen)

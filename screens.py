@@ -1,10 +1,14 @@
+import copy
 import sys
 
 import pygame as pg
 
 from board import Board
 from game_state import GameState
-from gui_elements import Button, Container, GameList, InputTextField, MoveList, RadioButton, RadioButtonGroup
+from gui_elements import (
+    Button, Container, GameList, InputTextField, ImageRadioButton,
+    MoveList, RadioButton, RadioButtonGroup
+)
 from managers import JsonManager
 
 
@@ -74,10 +78,11 @@ class GameOptions():
     def __init__(self, screen, image_manager):
         self.screen = screen
         self.image_manager = image_manager
-        self.images = self.image_manager.get_images(["background"])
+        self.images = self.image_manager.get_images(["background", "wp", "bp", "wk", "bk"])
         self.opponent_option = "Human"
         self.side_option = "White"
         self.level_option = 1
+        self.white_to_move = True
 
         self.container = Container(100, 50, 600, 500, (82, 85, 84))
 
@@ -111,13 +116,38 @@ class GameOptions():
                 RadioButton(
                     200, 300, 100, 30, "Level: 3", (255, 255, 255),
                     "gadugi", 18, 15, (0, 0, 0), (53, 57, 60), False)
-            ], True)
+            ], True),
+            RadioButtonGroup([
+                RadioButton(
+                    150, 350, 200, 30, "White moves first", (255, 255, 255),
+                    "gadugi", 18, 15, (0, 0, 0), (53, 57, 60), True),
+                RadioButton(
+                    150, 400, 200, 30, "Black moves first", (255, 255, 255),
+                    "gadugi", 18, 15, (0, 0, 0), (53, 57, 60), False)
+            ], False),
         ]
 
         self.buttons = [
             Button(150, 450, 150, 50, "Cancel", "constantia", 28, (53, 57, 60), (255, 255, 255)),
             Button(500, 450, 150, 50, "Play", "constantia", 28, (53, 57, 60), (255, 255, 255))
         ]
+
+        self.board = Board(
+            435, 275, 150, "User", [(238, 213, 183), (139, 115, 85), (139, 76, 57)],
+            (104, 34, 139), 11, self.images
+        )
+
+        self.position = [
+            ["++", "bp", "++", "bp", "++", "bp", "++", "bp", "++", "bp"],
+            ["bp", "++", "bp", "++", "bp", "++", "bp", "++", "bp", "++"],
+            ["++", "bp", "++", "bp", "++", "bp", "++", "bp", "++", "bp"],
+            ["bp", "++", "bp", "++", "bp", "++", "bp", "++", "bp", "++"],
+            ["++", "--", "++", "--", "++", "--", "++", "--", "++", "--"],
+            ["--", "++", "--", "++", "--", "++", "--", "++", "--", "++"],
+            ["++", "wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp"],
+            ["wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp", "++"],
+            ["++", "wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp"],
+            ["wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp", "++"]]
 
     def draw_background(self):
         self.screen.blit(self.images["background"], (0, 0))
@@ -135,22 +165,32 @@ class GameOptions():
         for button in self.buttons:
             button.draw(self.screen)
 
+    def draw_board(self):
+        self.board.draw(self.screen, self.position)
+
     def draw(self):
         self.draw_background()
         self.draw_container()
         self.draw_radio_buttons()
         self.draw_buttons()
+        self.draw_board()
 
     def handle_event(self, event):
         if event.type == pg.MOUSEBUTTONUP:
             mouse_pos = pg.mouse.get_pos()
-            if self.buttons[0].rect.collidepoint(mouse_pos):
+            if self.board.rect.collidepoint(mouse_pos):
+                board_editor_screen = BoardEditorScreen(self.screen, self.image_manager, self)
+                board_editor_screen.draw()
+                return board_editor_screen
+            elif self.buttons[0].rect.collidepoint(mouse_pos):
                 menu = Menu(self.screen, self.image_manager)
                 menu.draw()
                 return menu
             elif self.buttons[1].rect.collidepoint(mouse_pos):
                 game_screen = GameScreen(
-                    self.screen, self.image_manager, self.opponent_option, self.side_option, self.level_option)
+                    self.screen, self.image_manager, self.position, self.white_to_move,
+                    self.opponent_option, self.side_option, self.level_option
+                )
                 game_screen.draw()
                 pg.display.update()
                 if game_screen.game_state.is_computer_turn():
@@ -185,34 +225,27 @@ class GameOptions():
                             self.level_option = 2
                         elif radio_button.text == "Level: 3":
                             self.level_option = 3
+                        elif radio_button.text == "White moves first":
+                            self.white_to_move = True
+                        elif radio_button.text == "Black moves first":
+                            self.white_to_move = False
         return self
 
 
 class GameScreen():
-    def __init__(self, screen, image_manager, opponent, playing_color, skill_level):
+    def __init__(self, screen, image_manager, position, white_to_move, opponent, playing_color, skill_level):
         self.screen = screen
         self.image_manager = image_manager
         self.images = self.image_manager.get_images(["wp", "bp", "wk", "bk"])
         self.current_move_index = 0
-
         self.container = Container(0, 0, 800, 600, (82, 85, 84))
 
-        self.game_state = GameState([
-            ["++", "bp", "++", "bp", "++", "bp", "++", "bp", "++", "bp"],
-            ["bp", "++", "bp", "++", "bp", "++", "bp", "++", "bp", "++"],
-            ["++", "bp", "++", "bp", "++", "bp", "++", "bp", "++", "bp"],
-            ["bp", "++", "bp", "++", "bp", "++", "bp", "++", "bp", "++"],
-            ["++", "--", "++", "--", "++", "--", "++", "--", "++", "--"],
-            ["--", "++", "--", "++", "--", "++", "--", "++", "--", "++"],
-            ["++", "wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp"],
-            ["wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp", "++"],
-            ["++", "wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp"],
-            ["wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp", "++"]],
-            True, opponent, playing_color, skill_level, [])
+        self.game_state = GameState(position, white_to_move, opponent, playing_color, skill_level, [])
 
         self.board = Board(
             50, 50, 400, self.game_state.players[0] == "User",
-            [(238, 213, 183), (139, 115, 85), (139, 76, 57)], (104, 34, 139), 26, self.images)
+            [(238, 213, 183), (139, 115, 85), (139, 76, 57)], (104, 34, 139), 26, self.images
+        )
 
         self.buttons = [
             Button(100, 500, 150, 50, "Leave", "constantia", 28, (53, 57, 60), (255, 255, 255)),
@@ -503,4 +536,83 @@ class ViewGame():
                 elif event.button == 5:
                     self.move_list.scroll_down()
                     self.draw_move_list()
+        return self
+
+
+class BoardEditorScreen():
+    def __init__(self, screen, image_manager, previous_screen):
+        self.screen = screen
+        self.image_manager = image_manager
+        self.image = self.image_manager.get_images(["delete"])
+        self.previous_screen = previous_screen
+        self.position = copy.deepcopy(self.previous_screen.position)
+        self.container = Container(0, 0, 800, 600, (82, 85, 84))
+
+        self.board = Board(
+            200, 50, 400, "User", [(238, 213, 183), (139, 115, 85), (139, 76, 57)],
+            (104, 34, 139), 26, self.previous_screen.images
+        )
+
+        self.buttons = [
+            Button(100, 500, 150, 50, "Cancel", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(550, 500, 150, 50, "Save", "constantia", 28, (53, 57, 60), (255, 255, 255))
+        ]
+
+        self.image_radio_button_group = RadioButtonGroup([
+            ImageRadioButton(
+                280, 505, 40, 40, (139, 115, 85), (255, 255, 255), self.previous_screen.images["wp"], True),
+            ImageRadioButton(
+                330, 505, 40, 40, (139, 115, 85), (255, 255, 255), self.previous_screen.images["wk"], False),
+            ImageRadioButton(
+                380, 505, 40, 40, (139, 115, 85), (255, 255, 255), self.previous_screen.images["bp"], False),
+            ImageRadioButton(
+                430, 505, 40, 40, (139, 115, 85), (255, 255, 255), self.previous_screen.images["bk"], False),
+            ImageRadioButton(
+                480, 505, 40, 40, (139, 115, 85), (255, 255, 255), self.image["delete"], False)
+        ], False)
+
+    def draw_container(self):
+        self.container.draw(self.screen)
+
+    def draw_board(self):
+        self.board.draw(self.screen, self.position)
+
+    def draw_buttons(self):
+        for button in self.buttons:
+            button.draw(self.screen)
+
+    def draw_piece_options(self):
+        for image_radio_button in self.image_radio_button_group:
+            image_radio_button.draw(self.screen)
+
+    def draw(self):
+        self.draw_container()
+        self.draw_board()
+        self.draw_buttons()
+        self.draw_piece_options()
+
+    def handle_event(self, event):
+        if event.type == pg.MOUSEBUTTONUP and event.button == 1:
+            mouse_pos = pg.mouse.get_pos()
+            for image_radio_button in self.image_radio_button_group:
+                if image_radio_button.rect.collidepoint(mouse_pos):
+                    self.image_radio_button_group.manage_select(image_radio_button, self.screen)
+            if self.board.rect.collidepoint(mouse_pos):
+                clicked_square = int(self.board.get_square(mouse_pos)[0])
+                clicked_row = clicked_square // 10
+                clicked_col = clicked_square % 10
+                if (clicked_row + clicked_col) % 2:
+                    selected_image_radio_button = self.image_radio_button_group.get_selected_button()
+                    for i, image_radio_button in enumerate(self.image_radio_button_group):
+                        if image_radio_button == selected_image_radio_button:
+                            pieces = ["wp", "wk", "bp", "bk", "--"]
+                            self.position[clicked_row][clicked_col] = pieces[i]
+                            self.draw_board()
+            elif self.buttons[0].rect.collidepoint(mouse_pos):
+                self.previous_screen.draw()
+                self = self.previous_screen
+            elif self.buttons[1].rect.collidepoint(mouse_pos):
+                self.previous_screen.position = self.position
+                self.previous_screen.draw()
+                self = self.previous_screen
         return self

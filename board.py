@@ -19,7 +19,7 @@ class Board():
         rect_size = self.size // dimension
         for row in range(dimension):
             for col in range(dimension):
-                color = self.square_colors[((row + col) % 2)]
+                color = self.square_colors[(row + col) % 2]
                 rect_pos = (col * rect_size + self.x, row * rect_size + self.y)
                 pg.draw.rect(screen, color, pg.Rect(*rect_pos, rect_size, rect_size))
 

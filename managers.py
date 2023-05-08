@@ -13,6 +13,7 @@ class ImageManager():
         self.images["bp"] = pg.image.load("images/bp.png")
         self.images["wk"] = pg.image.load("images/wk.png")
         self.images["bk"] = pg.image.load("images/bk.png")
+        self.images["delete"] = pg.image.load("images/delete.png")
 
     def get_images(self, images):
         return {image: self.images[image] for image in images}
