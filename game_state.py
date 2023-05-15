@@ -29,6 +29,9 @@ class GameState():
         else:
             return [opponent, "User"]
 
+    def change_legal_moves_and_is_capture(self):
+        self.legal_moves, self.is_capture = GameLogic.get_legal_moves(self.position, self.white_to_move)
+
     def make_move(self, move):
         self.position = GameLogic.get_position(self.position, move, self.is_capture)
         self.move_list.append(self.to_standard_format(move))
@@ -36,7 +39,7 @@ class GameState():
     def update_game_state(self):
         self.positions.append(copy.deepcopy(self.position))
         self.white_to_move = not self.white_to_move
-        self.legal_moves, self.is_capture = GameLogic.get_legal_moves(self.position, self.white_to_move)
+        self.change_legal_moves_and_is_capture()
 
     def is_computer_turn(self):
         if self.white_to_move and self.players[0] == "Computer":
@@ -93,11 +96,13 @@ class GameState():
             return "Black wins!" if self.white_to_move else "White wins!"
         return "Draw!"
 
-    def get_game_state_dictionary(self, game_name):
-        return {
-            "game_name": game_name, "players": self.players,
-            "starting_position": self.positions[0], "move_list": self.move_list
-        }
+    def get_game_dictionary(self, game_name):
+        return {"game_name": game_name, "players": self.players,
+                "starting_position": self.positions[0], "move_list": self.move_list}
+
+    def get_analysis_dictionary(self, analysis_name):
+        return {"analysis_name": analysis_name, "players": self.players,
+                "starting_position": self.positions[0], "move_list": self.move_list}
 
     def get_all_positions_of_game(self):
         positions = []

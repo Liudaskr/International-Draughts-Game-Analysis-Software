@@ -210,7 +210,7 @@ class InputTextField():
     def input_is_too_long(self):
         return self.font.render(self.input_text + " ", True, self.text_color).get_size()[0] > self.rect.width - 5
 
-    def input_is_unique_game_name(self, game_names):
+    def input_is_unique_name(self, game_names):
         if self.input_text in game_names:
             return False
         return True
