@@ -5,10 +5,11 @@ import sys
 import pygame as pg
 
 from board import Board
+from engine import Engine
 from game_state import GameState
 from gui_elements import (
     Button, Container, GameList, InputTextField, ImageRadioButton,
-    MoveList, RadioButton, RadioButtonGroup
+    MoveList, MoveSuggestionBox, RadioButton, RadioButtonGroup
 )
 from managers import JsonManager
 
@@ -255,7 +256,8 @@ class GameScreen():
         self.buttons = [
             Button(100, 500, 150, 50, "Leave", "constantia", 28, (53, 57, 60), (255, 255, 255)),
             Button(550, 500, 150, 50, "Save Game", "constantia", 28, (53, 57, 60), (255, 255, 255)),
-            Button(325, 525, 150, 50, "Submit", "constantia", 28, (53, 57, 60), (255, 255, 255))
+            Button(325, 525, 150, 50, "Submit", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(550, 105, 150, 40, "See best moves", "constantia", 20, (53, 57, 60), (255, 255, 255))
         ]
         self.game_over_messages = [
             pg.font.SysFont("constantia", 30).render("White wins!", True, (255, 255, 255)),
@@ -274,6 +276,9 @@ class GameScreen():
         self.input_text_field = InputTextField(
             300, 475, 200, 30, "Courier", 15, (220, 220, 220), (0, 0, 0), "Provide a name")
 
+        self.move_suggestion_box = MoveSuggestionBox(
+            550, 50, 150, 50, "Courier New", 15, (220, 220, 220), (0, 0, 0), None)
+
     def draw_container(self):
         self.container.draw(self.screen)
 
@@ -283,6 +288,7 @@ class GameScreen():
     def draw_buttons(self):
         self.buttons[0].draw(self.screen)
         self.buttons[1].draw(self.screen)
+        self.buttons[3].draw(self.screen)
 
     def draw_move_list(self):
         self.move_list.draw(
@@ -308,6 +314,8 @@ class GameScreen():
                         self.board.draw(self.screen, self.game_state.position)
                         self.game_state.update_game_state()
                         self.board.move_in_progress = []
+                        self.move_suggestion_box.make_invisible()
+                        self.draw()
                         if self.game_state.game_is_over():
                             result = self.game_state.get_result()
                             if result == "White wins!":
@@ -357,6 +365,15 @@ class GameScreen():
                 self.input_text_field.draw(self.screen)
                 self.buttons[2].draw(self.screen)
                 self.input_text_field.make_visible()
+            elif self.buttons[3].rect.collidepoint(mouse_pos):
+                moves_and_evaluations = Engine.generate_moves_and_evaluations(
+                    self.game_state.position, self.game_state.white_to_move)
+                top_two_moves_by_evaluation = tuple(sorted(
+                    moves_and_evaluations.items(), key=lambda x: x[1], reverse=self.game_state.white_to_move)[:2])
+                self.move_suggestion_box = MoveSuggestionBox(
+                    550, 50, 150, 50, "Courier New", 15, (220, 220, 220), (0, 0, 0), top_two_moves_by_evaluation)
+                self.move_suggestion_box.make_visible()
+                self.move_suggestion_box.draw(self.screen)
             elif self.input_text_field.rect.collidepoint(mouse_pos):
                 self.input_text_field.make_active()
             elif self.move_list.rect.collidepoint(mouse_pos):
@@ -523,10 +540,14 @@ class ViewGame():
             Button(520, 450, 40, 30, "<<", "constantia", 28, (53, 57, 60), (255, 255, 255)),
             Button(565, 450, 40, 30, "<", "constantia", 28, (53, 57, 60), (255, 255, 255)),
             Button(645, 450, 40, 30, ">", "constantia", 28, (53, 57, 60), (255, 255, 255)),
-            Button(690, 450, 40, 30, ">>", "constantia", 28, (53, 57, 60), (255, 255, 255))
+            Button(690, 450, 40, 30, ">>", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(550, 105, 150, 40, "See best moves", "constantia", 20, (53, 57, 60), (255, 255, 255))
         ]
 
         self.move_list = MoveList(500, 150, 250, 300, "Courier New", 16, (220, 220, 220), (0, 0, 0))
+
+        self.move_suggestion_box = MoveSuggestionBox(
+            550, 50, 150, 50, "Courier New", 15, (220, 220, 220), (0, 0, 0), None)
 
     def draw_container(self):
         self.container.draw(self.screen)
@@ -565,18 +586,32 @@ class ViewGame():
                         return saved_games
                 elif self.buttons[1].rect.collidepoint(mouse_pos):
                     self.current_position_index = 0
-                    self.draw_move_list()
+                    self.move_suggestion_box.make_invisible()
+                    self.draw()
                 elif self.buttons[2].rect.collidepoint(mouse_pos):
                     if self.current_position_index > 0:
                         self.current_position_index -= 1
-                        self.draw_move_list()
+                        self.move_suggestion_box.make_invisible()
+                        self.draw()
                 elif self.buttons[3].rect.collidepoint(mouse_pos):
                     if self.current_position_index < len(self.moves):
                         self.current_position_index += 1
-                        self.draw_move_list()
+                        self.move_suggestion_box.make_invisible()
+                        self.draw()
                 elif self.buttons[4].rect.collidepoint(mouse_pos):
                     self.current_position_index = len(self.moves)
-                    self.draw_move_list()
+                    self.move_suggestion_box.make_invisible()
+                    self.draw()
+                elif self.buttons[5].rect.collidepoint(mouse_pos):
+                    moves_and_evaluations = Engine.generate_moves_and_evaluations(
+                        self.positions[self.current_position_index], not bool(self.current_position_index % 2))
+                    top_two_moves_by_evaluation = tuple(
+                        sorted(moves_and_evaluations.items(), key=lambda x: x[1], reverse=not bool(
+                            self.current_position_index % 2))[:2])
+                    self.move_suggestion_box = MoveSuggestionBox(
+                        550, 50, 150, 50, "Courier New", 15, (220, 220, 220), (0, 0, 0), top_two_moves_by_evaluation)
+                    self.move_suggestion_box.make_visible()
+                    self.move_suggestion_box.draw(self.screen)
                 self.board.draw(self.screen, self.positions[self.current_position_index])
             elif self.move_list.rect.collidepoint(mouse_pos):
                 if event.button == 4:
@@ -805,7 +840,8 @@ class CreateGameAnalysis():
             Button(565, 450, 40, 30, "<", "constantia", 28, (53, 57, 60), (255, 255, 255)),
             Button(610, 450, 30, 30, "-", "constantia", 28, (53, 57, 60), (255, 255, 255)),
             Button(645, 450, 40, 30, ">", "constantia", 28, (53, 57, 60), (255, 255, 255)),
-            Button(690, 450, 40, 30, ">>", "constantia", 28, (53, 57, 60), (255, 255, 255))
+            Button(690, 450, 40, 30, ">>", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(550, 105, 150, 40, "See best moves", "constantia", 20, (53, 57, 60), (255, 255, 255))
         ]
 
         self.validation_error_messages = [
@@ -818,6 +854,9 @@ class CreateGameAnalysis():
 
         self.input_text_field = InputTextField(
             300, 475, 200, 30, "Courier", 15, (220, 220, 220), (0, 0, 0), "Provide a name")
+
+        self.move_suggestion_box = MoveSuggestionBox(
+            550, 50, 150, 50, "Courier New", 15, (220, 220, 220), (0, 0, 0), None)
 
     def draw_container(self):
         self.container.draw(self.screen)
@@ -850,11 +889,13 @@ class CreateGameAnalysis():
                     self.input_text_field.make_active()
                 elif self.buttons[3].rect.collidepoint(mouse_pos):
                     self.current_position_index = 0
-                    self.draw_move_list()
+                    self.move_suggestion_box.make_invisible()
+                    self.draw()
                 elif self.buttons[4].rect.collidepoint(mouse_pos):
                     if self.current_position_index > 0:
                         self.current_position_index -= 1
-                        self.draw_move_list()
+                        self.move_suggestion_box.make_invisible()
+                        self.draw()
                 elif self.buttons[5].rect.collidepoint(mouse_pos):
                     self.positions = self.positions[:self.current_position_index + 1]
                     self.game_state.positions = self.game_state.positions[:self.current_position_index + 1]
@@ -863,14 +904,27 @@ class CreateGameAnalysis():
                     self.game_state.white_to_move = bool(len(self.moves) % 2 - 1)
                     self.game_state.position = self.positions[-1]
                     self.game_state.change_legal_moves_and_is_capture()
-                    self.draw_move_list()
+                    self.move_suggestion_box.make_invisible()
+                    self.draw()
                 elif self.buttons[6].rect.collidepoint(mouse_pos):
                     if self.current_position_index < len(self.moves):
                         self.current_position_index += 1
-                        self.draw_move_list()
+                        self.move_suggestion_box.make_invisible()
+                        self.draw()
                 elif self.buttons[7].rect.collidepoint(mouse_pos):
                     self.current_position_index = len(self.moves)
-                    self.draw_move_list()
+                    self.move_suggestion_box.make_invisible()
+                    self.draw()
+                elif self.buttons[8].rect.collidepoint(mouse_pos):
+                    moves_and_evaluations = Engine.generate_moves_and_evaluations(
+                        self.positions[self.current_position_index], not bool(self.current_position_index % 2))
+                    top_two_moves_by_evaluation = tuple(
+                        sorted(moves_and_evaluations.items(), key=lambda x: x[1], reverse=not bool(
+                            self.current_position_index % 2))[:2])
+                    self.move_suggestion_box = MoveSuggestionBox(
+                        550, 50, 150, 50, "Courier New", 15, (220, 220, 220), (0, 0, 0), top_two_moves_by_evaluation)
+                    self.move_suggestion_box.make_visible()
+                    self.move_suggestion_box.draw(self.screen)
                 else:
                     self.input_text_field.make_inactive()
                 self.game_state.position = copy.deepcopy(self.positions[self.current_position_index])
@@ -911,6 +965,8 @@ class CreateGameAnalysis():
                                 self.moves = self.game_state.move_list
                                 self.positions.append(self.game_state.position)
                                 self.board.move_in_progress = []
+                                self.move_suggestion_box.make_invisible()
+                                self.draw()
                                 if self.game_state.game_is_over():
                                     self.game_state.legal_moves = []
                                 else:

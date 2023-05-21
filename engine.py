@@ -1,4 +1,5 @@
 import copy
+import random
 
 from game_logic import GameLogic
 
@@ -13,7 +14,7 @@ class Engine():
         legal_moves, is_capture = GameLogic.get_legal_moves(position, white_to_move)
         for move in legal_moves:
             some_position = GameLogic.get_position(copy.deepcopy(position), move, is_capture)
-            evaluation = self.minimax(some_position, not white_to_move, self.skill_level*2-1)
+            evaluation = Engine.minimax(some_position, not white_to_move, self.skill_level*2-1)
             if white_to_move and evaluation > best_evaluation:
                 best_evaluation = evaluation
                 best_move = move
@@ -22,30 +23,47 @@ class Engine():
                 best_move = move
         return best_move
 
-    def minimax(self, position, white_to_move, depth, alpha=-float("inf"), beta=float("inf")):
+    @staticmethod
+    def generate_moves_and_evaluations(position, white_to_move):
+        moves_and_evaluations = {}
+        legal_moves, is_capture = GameLogic.get_legal_moves(position, white_to_move)
+        for move in legal_moves:
+            some_position = GameLogic.get_position(copy.deepcopy(position), move, is_capture)
+            move = [square // 2 + 1 for square in move]
+            separator = "x" if is_capture else "-"
+            move = separator.join(str(square) for square in move)
+            if "x" in move:
+                squares = [square for square in move.split("x")]
+                move = squares[0] + "x" + squares[-1]
+            moves_and_evaluations[move] = Engine.minimax(some_position, not white_to_move, 3)
+        return moves_and_evaluations
+
+    @staticmethod
+    def minimax(position, white_to_move, depth, alpha=-float("inf"), beta=float("inf")):
         if depth == 0:
-            return self.evaluate_position(position)
+            return Engine.evaluate_position(position)
 
         if white_to_move:
             max_evaluation = -float("inf")
-            for position in GameLogic.get_positions(position, white_to_move):
-                evaluation = self.minimax(position, False, depth-1, alpha, beta)
+            for next_position in GameLogic.get_positions(position, white_to_move):
+                evaluation = Engine.minimax(next_position, False, depth-1, alpha, beta)
                 max_evaluation = max(max_evaluation, evaluation)
-                alpha = max(alpha, evaluation)
+                alpha = max(alpha, max_evaluation)
                 if beta <= alpha:
                     break
             return max_evaluation
         else:
             min_evaluation = float("inf")
-            for position in GameLogic.get_positions(position, white_to_move):
-                evaluation = self.minimax(position, True, depth-1, alpha, beta)
+            for next_position in GameLogic.get_positions(position, white_to_move):
+                evaluation = Engine.minimax(next_position, True, depth-1, alpha, beta)
                 min_evaluation = min(min_evaluation, evaluation)
-                beta = min(beta, evaluation)
+                beta = min(beta, min_evaluation)
                 if beta <= alpha:
                     break
             return min_evaluation
 
-    def evaluate_position(self, position):
+    @staticmethod
+    def evaluate_position(position):
         dimension = 10
         evaluation = 0
         for row in range(dimension):

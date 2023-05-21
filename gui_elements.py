@@ -292,3 +292,55 @@ class ImageRadioButton():
     def unselect(self, screen):
         self.is_selected = False
         self.draw(screen)
+
+
+class MoveSuggestionBox():
+    def __init__(self, x, y, width, height, font, font_size, rect_color, text_color, moves_and_evaluations):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.rect = pg.Rect(x, y, width, height)
+        self.font = pg.font.SysFont(font, font_size)
+        self.rect_color = rect_color
+        self.text_color = text_color
+        self.moves_and_evaluations = moves_and_evaluations
+        self.is_visible = False
+        self.suggestion_rects = []
+
+    def draw_rect(self, screen):
+        pg.draw.rect(screen, self.rect_color, self.rect)
+        pg.draw.rect(screen, (0, 0, 0), self.rect, 2)
+
+    def draw_moves_and_evaluations(self, screen):
+        y = self.y
+        self.suggestion_rects = []
+        for move_and_evaluation in self.moves_and_evaluations:
+            self.suggestion_rects.append(pg.Rect(self.x, y, self.width // 3, self.height // 2))
+            character = "+" if move_and_evaluation[1] >= 0 else ""
+            text = self.font.render(character + str(move_and_evaluation[1]), True, self.text_color)
+            text_rect = text.get_rect()
+            text_rect.center = self.suggestion_rects[-1].center
+            screen.blit(text, text_rect)
+            self.suggestion_rects.append(pg.Rect(self.x + 50, y, self.width - self.width // 3, self.height // 2))
+            text = self.font.render(move_and_evaluation[0], True, self.text_color)
+            text_rect = text.get_rect()
+            text_rect.center = self.suggestion_rects[-1].center
+            screen.blit(text, text_rect)
+            y += 25
+
+    def draw_suggestion_rects(self, screen):
+        for rect in self.suggestion_rects:
+            pg.draw.rect(screen, (0, 0, 0), rect, 1)
+
+    def draw(self, screen):
+        if self.is_visible:
+            self.draw_rect(screen)
+            self.draw_moves_and_evaluations(screen)
+            self.draw_suggestion_rects(screen)
+
+    def make_visible(self):
+        self.is_visible = True
+
+    def make_invisible(self):
+        self.is_visible = False
