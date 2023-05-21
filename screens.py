@@ -396,7 +396,7 @@ class GameScreen():
                         self.screen.fill((82, 85, 84), (315, 455, 200, 20))
                         self.screen.blit(self.validation_error_messages[0], (325, 455))
                     else:
-                        allowed_characters = list(string.ascii_letters + string.digits + string.punctuation)
+                        allowed_characters = list(string.ascii_letters + string.digits + string.punctuation + " ")
                         if event.unicode in allowed_characters:
                             self.input_text_field.add_character_to_text(event.unicode)
                             self.input_text_field.draw(self.screen)
