@@ -11,7 +11,7 @@ from gui_elements import (
     Button, Container, GameList, InputTextField, ImageRadioButton,
     MoveList, MoveSuggestionBox, RadioButton, RadioButtonGroup
 )
-from managers import JsonManager
+from managers import JsonManager, PDNManager
 
 
 class Window():
@@ -257,7 +257,7 @@ class GameScreen():
             Button(100, 500, 150, 50, "Leave", "constantia", 28, (53, 57, 60), (255, 255, 255)),
             Button(550, 500, 150, 50, "Save Game", "constantia", 28, (53, 57, 60), (255, 255, 255)),
             Button(325, 525, 150, 50, "Submit", "constantia", 28, (53, 57, 60), (255, 255, 255)),
-            Button(550, 105, 150, 40, "See best moves", "constantia", 20, (53, 57, 60), (255, 255, 255))
+            Button(550, 105, 150, 40, "See Best Moves", "constantia", 20, (53, 57, 60), (255, 255, 255))
         ]
         self.game_over_messages = [
             pg.font.SysFont("constantia", 30).render("White wins!", True, (255, 255, 255)),
@@ -426,6 +426,7 @@ class SavedGames():
         self.image_manager = image_manager
         self.is_analysis = is_analysis
         self.clicked_create_analysis = False
+        self.clicked_export_game = False
         self.container = Container(0, 0, 800, 600, (82, 85, 84))
         if self.is_analysis:
             self.games = JsonManager.load_from_json("analyses.json")
@@ -436,7 +437,9 @@ class SavedGames():
 
         self.buttons = [
             Button(100, 500, 150, 50, "Cancel", "constantia", 28, (53, 57, 60), (255, 255, 255)),
-            Button(575, 100, 200, 50, "Create Analysis", "constantia", 28, (53, 57, 60), (255, 255, 255))
+            Button(575, 100, 200, 50, "Create Analysis", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(575, 160, 200, 50, "Import Game", "constantia", 28, (53, 57, 60), (255, 255, 255)),
+            Button(575, 220, 200, 50, "Export Game", "constantia", 28, (53, 57, 60), (255, 255, 255))
         ]
         self.message = pg.font.SysFont("constantia", 20).render("Choose a game ", True, (255, 255, 255))
 
@@ -458,6 +461,8 @@ class SavedGames():
         self.buttons[0].draw(self.screen)
         if not self.is_analysis:
             self.buttons[1].draw(self.screen)
+            self.buttons[2].draw(self.screen)
+            self.buttons[3].draw(self.screen)
 
     def draw(self):
         self.draw_container()
@@ -478,6 +483,7 @@ class SavedGames():
                     game_number = self.game_list.get_game_clicked(mouse_pos)
                     if game_number is not None:
                         game = self.games[game_number]
+                        game_name = game["game_name"]
                         starting_position = game["starting_position"]
                         moves = game["move_list"]
                         if moves:
@@ -490,11 +496,15 @@ class SavedGames():
                                 self.screen, self.image_manager, starting_position, white_to_move, playing_color, moves)
                             create_game_analysis.draw()
                             return create_game_analysis
-                        view_game = ViewGame(
-                            self.screen, self.image_manager, starting_position,
-                            moves, white_to_move, playing_color, self.is_analysis)
-                        view_game.draw()
-                        return view_game
+                        elif self.clicked_export_game:
+                            PDNManager.export_game(game_name, moves)
+                            self.clicked_export_game = False
+                        else:
+                            view_game = ViewGame(
+                                self.screen, self.image_manager, starting_position,
+                                moves, white_to_move, playing_color, self.is_analysis)
+                            view_game.draw()
+                            return view_game
                     self.clicked_create_analysis = False
                     self.draw()
 
@@ -506,8 +516,23 @@ class SavedGames():
                 elif self.buttons[1].rect.collidepoint(mouse_pos) and not self.is_analysis:
                     self.screen.blit(self.message, (610, 60))
                     self.clicked_create_analysis = True
+                    self.clicked_export_game = False
+                elif self.buttons[2].rect.collidepoint(mouse_pos):
+                    PDNManager.import_game()
+                    if self.is_analysis:
+                        self.games = JsonManager.load_from_json("analyses.json")
+                        self.game_names = [game['analysis_name'] for game in self.games]
+                    else:
+                        self.games = JsonManager.load_from_json("games.json")
+                        self.game_names = [game['game_name'] for game in self.games]
+                    self.draw_game_list()
+                elif self.buttons[3].rect.collidepoint(mouse_pos) and not self.is_analysis:
+                    self.screen.blit(self.message, (610, 60))
+                    self.clicked_export_game = True
+                    self.clicked_create_analysis = False
                 else:
                     self.clicked_create_analysis = False
+                    self.clicked_export_game = False
                     self.draw()
         return self
 
@@ -541,7 +566,7 @@ class ViewGame():
             Button(565, 450, 40, 30, "<", "constantia", 28, (53, 57, 60), (255, 255, 255)),
             Button(645, 450, 40, 30, ">", "constantia", 28, (53, 57, 60), (255, 255, 255)),
             Button(690, 450, 40, 30, ">>", "constantia", 28, (53, 57, 60), (255, 255, 255)),
-            Button(550, 105, 150, 40, "See best moves", "constantia", 20, (53, 57, 60), (255, 255, 255))
+            Button(550, 105, 150, 40, "See Best Moves", "constantia", 20, (53, 57, 60), (255, 255, 255))
         ]
 
         self.move_list = MoveList(500, 150, 250, 300, "Courier New", 16, (220, 220, 220), (0, 0, 0))
@@ -841,7 +866,7 @@ class CreateGameAnalysis():
             Button(610, 450, 30, 30, "-", "constantia", 28, (53, 57, 60), (255, 255, 255)),
             Button(645, 450, 40, 30, ">", "constantia", 28, (53, 57, 60), (255, 255, 255)),
             Button(690, 450, 40, 30, ">>", "constantia", 28, (53, 57, 60), (255, 255, 255)),
-            Button(550, 105, 150, 40, "See best moves", "constantia", 20, (53, 57, 60), (255, 255, 255))
+            Button(550, 105, 150, 40, "See Best Moves", "constantia", 20, (53, 57, 60), (255, 255, 255))
         ]
 
         self.validation_error_messages = [
