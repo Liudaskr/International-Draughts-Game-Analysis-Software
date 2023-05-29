@@ -1,7 +1,10 @@
 import json
 import tkinter as tk
+import tkinter.messagebox as messagebox
 
 import pygame as pg
+
+from game_state import GameState
 
 
 class ImageManager():
@@ -58,25 +61,23 @@ class PDNManager():
             game_names = [game['game_name'] for game in JsonManager.load_from_json("games.json")]
             game_name = game_name_entry.get()
             if game_name in game_names:
-                return True, game_name
+                messagebox.showerror("Error", "The game name is not unique.")
+                return
+
             file_name = game_name + ".pdn"
             file_path = folder_path + "/" + file_name
             with open(file_path, "w") as file:
                 file.write(content)
             window.destroy()
-            return False, game_name
-        save_button = tk.Button(window, text="Save", command=window.quit)
+            file_path = folder_path + "/" + game_name + ".pdn"
+            with open(file_path, "r") as file:
+                lines = file.readlines()
+                PDNManager.convert_to_json(game_name, lines)
+
+        save_button = tk.Button(window, text="Save", command=save_file)
         save_button.pack()
+
         window.mainloop()
-        name_already_exists, game_name = save_file()
-        if name_already_exists:
-            window.destroy()
-            return
-        folder_path = "pdns"
-        file_path = folder_path + "/" + game_name + ".pdn"
-        with open(file_path, "r") as file:
-            lines = file.readlines()
-            PDNManager.convert_to_json(game_name, lines)
 
     @staticmethod
     def convert_to_json(game_name, lines):
@@ -99,6 +100,7 @@ class PDNManager():
                 return
             for square in squares:
                 if not 0 <= int(square) <= 50:
+                    messagebox.showerror("Error", "The game PDN is invalid.")
                     return
         starting_position = [
             ["++", "bp", "++", "bp", "++", "bp", "++", "bp", "++", "bp"],
@@ -111,6 +113,9 @@ class PDNManager():
             ["wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp", "++"],
             ["++", "wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp"],
             ["wp", "++", "wp", "++", "wp", "++", "wp", "++", "wp", "++"]]
+        if not GameState.is_valid_game(starting_position, True, moves):
+            messagebox.showerror("Error", "The game PDN is invalid.")
+            return
 
         data = {"game_name": game_name, "players": ["User", "Human"],
                 "starting_position": starting_position, "move_list": moves}

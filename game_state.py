@@ -117,3 +117,17 @@ class GameState():
             position = GameLogic.get_position(copy.deepcopy(position), program_format_move, is_capture)
             positions.append(position)
         return positions
+
+    @staticmethod
+    def is_valid_game(starting_position, white_to_move, moves):
+        try:
+            position = copy.deepcopy(starting_position)
+            game_state = GameState(starting_position, white_to_move, None, None, None, [])
+            for move in moves:
+                is_capture = True if "x" in move else False
+                move = game_state.to_program_format(move)
+                position = GameLogic.get_position(copy.deepcopy(position), move, is_capture)
+                white_to_move = not white_to_move
+            return True
+        except:
+            return False
